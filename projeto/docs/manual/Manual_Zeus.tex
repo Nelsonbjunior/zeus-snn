@@ -1,0 +1,601 @@
+% Manual do Robô Zeus — compilar com XeLaTeX (duas passadas):
+%   xelatex Manual_Zeus.tex && xelatex Manual_Zeus.tex
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2cm,top=2.3cm,bottom=2.3cm]{geometry}
+\usepackage{fontspec}
+\usepackage[brazil]{babel}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs,tabularx,longtable,array}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{enumitem}
+\usepackage{needspace}
+\usepackage[most]{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{calc,positioning,arrows.meta,shapes.geometric}
+\usepackage[hidelinks,bookmarksnumbered]{hyperref}
+
+\setmainfont{Segoe UI}
+\setsansfont{Segoe UI}
+\setmonofont{Consolas}[Scale=0.9]
+\newfontfamily\simbolo{Segoe UI Symbol}[BoldFont=Segoe UI Symbol]
+\newcommand{\bs}{\textbackslash\allowbreak}
+
+\definecolor{zeus}{HTML}{1E5AA8}
+\definecolor{zeusclaro}{HTML}{E8F0FB}
+\definecolor{alerta}{HTML}{B54708}
+\definecolor{alertaclaro}{HTML}{FEF3E2}
+\definecolor{ok}{HTML}{1F7A4D}
+\definecolor{okclaro}{HTML}{E7F5EE}
+\definecolor{cinza}{HTML}{5B6573}
+\definecolor{oled}{HTML}{080A0E}
+
+\hypersetup{pdftitle={Manual do Robô Zeus},pdfauthor={Robô Zeus},pdflang={pt-BR}}
+
+\titleformat{\section}{\Large\bfseries\color{zeus}}{\thesection}{0.6em}{}[\vspace{-0.4em}\color{zeus!40}\rule{\linewidth}{0.6pt}]
+\titleformat{\subsection}{\large\bfseries\color{zeus!85!black}}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.4em}{0.8em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{cinza}Manual do Robô Zeus}
+\fancyhead[R]{\small\color{cinza}Edição de 27/10/2026}
+\fancyfoot[C]{\small\color{cinza}Página \thepage\ de \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\renewcommand{\arraystretch}{1.25}
+
+\newtcolorbox{dica}{enhanced,breakable,colback=okclaro,colframe=ok,boxrule=0pt,leftrule=3pt,arc=2pt,
+  left=8pt,right=8pt,top=5pt,bottom=5pt,title={Dica},coltitle=ok,colbacktitle=okclaro,fonttitle=\bfseries,
+  attach title to upper={\ \ }}
+\newtcolorbox{atencao}{enhanced,breakable,colback=alertaclaro,colframe=alerta,boxrule=0pt,leftrule=3pt,arc=2pt,
+  left=8pt,right=8pt,top=5pt,bottom=5pt,title={Atenção},coltitle=alerta,colbacktitle=alertaclaro,fonttitle=\bfseries,
+  attach title to upper={\ \ }}
+\newtcolorbox{nota}{enhanced,breakable,colback=zeusclaro,colframe=zeus,boxrule=0pt,leftrule=3pt,arc=2pt,
+  left=8pt,right=8pt,top=5pt,bottom=5pt}
+
+% Fala do usuário
+\newcommand{\fala}[1]{\textit{«#1»}}
+% Botão da tela
+\newcommand{\botao}[1]{\tikz[baseline=(b.base)]\node[draw=zeus,fill=zeusclaro,rounded corners=2pt,inner sep=2pt,font=\small\bfseries,text=zeus](b){#1};}
+% Tela do OLED com legenda
+\newcommand{\tela}[2]{\begin{minipage}[t]{0.235\linewidth}\centering
+  \includegraphics[width=\linewidth]{img/#1}\\[-1pt]{\small\color{cinza}#2}\end{minipage}}
+
+\begin{document}
+
+%======================================================================
+\begin{titlepage}
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[oled] (current page.north west) rectangle ([yshift=-12.5cm]current page.north east);
+\end{tikzpicture}
+\vspace*{0.4cm}
+\begin{center}
+  \includegraphics[width=0.62\linewidth]{img/02_feliz.png}\\[0.8cm]
+  {\color{white}\fontsize{40}{46}\selectfont\bfseries Robô Zeus}\\[0.25cm]
+  {\color{white!80!zeus}\Large Manual do usuário}
+\end{center}
+\vspace{3.2cm}
+{\large O robozinho de bancada que conversa em português, mostra a cara num OLED,
+controla o notebook, posta no Instagram e joga xadrez — tudo comandado pela voz no celular,
+como uma Alexa.}
+
+\vspace{1.2cm}
+\begin{tabularx}{\linewidth}{@{}>{\bfseries\color{cinza}}l X@{}}
+Robô & ESP32-S3 com OLED SSD1306 128×64 \\
+Cérebro & Ollama \texttt{llama3.1:8b}, rodando no próprio notebook \\
+App & Android 1.3.0 e iPhone (atalho na Tela de Início) \\
+Endereço & \url{https://zeus.appdevtest.shop} \\
+Edição & 27 de outubro de 2026 \\
+\end{tabularx}
+\vfill
+{\small\color{cinza}Baseado no projeto aberto \emph{cozmo-esp32}, de Fabrício Dev (licença MIT).}
+\end{titlepage}
+
+\setcounter{tocdepth}{1}
+\tableofcontents
+\newpage
+
+%======================================================================
+\section{O que é o Zeus}
+
+O Zeus é um robozinho de mesa. Ele tem um rosto animado num pequeno display e conversa com você
+em português. Você fala com ele pelo celular, do jeito que fala com uma Alexa:
+\fala{Zeus, que horas são?}. Ele responde em voz alta pelo alto-falante do notebook e mostra a
+resposta no rosto, com a boca mexendo a cada palavra.
+
+\textbf{O que ele sabe fazer:}
+\begin{itemize}
+  \item \textbf{Conversar} em português sobre qualquer assunto, sem custo de nuvem: quem pensa é o notebook.
+  \item \textbf{Dizer dados reais}: hora, temperatura da cidade e cotação de criptomoedas. Esses números
+        vêm da internet e nunca são inventados.
+  \item \textbf{Mudar de cara}: feliz, triste, bravo, sono, curioso, surpreso. Enquanto fala, aparece uma boca.
+  \item \textbf{Controlar o notebook}: abrir e fechar programas e sites, pesquisar no Google e no YouTube.
+  \item \textbf{Mostrar a webcam} do notebook ao vivo no celular, em vários aparelhos ao mesmo tempo.
+  \item \textbf{Tirar uma foto com o celular e postar no Instagram} pelo Chrome do notebook.
+  \item \textbf{Escrever no WhatsApp} do notebook e enviar só depois que você confirmar.
+  \item \textbf{Criar páginas web} pela voz e alterá-las ao vivo.
+  \item \textbf{Jogar xadrez} com você, com o tabuleiro no display e no celular.
+\end{itemize}
+
+\begin{nota}
+O robô não tem alto-falante, motor, luzes nem sensores. A voz sai do \textbf{alto-falante do
+notebook} (em \emph{Ajustes} dá para mudar para o celular); o robô mostra o rosto, os textos e o
+tabuleiro.
+\end{nota}
+
+%======================================================================
+\section{As três partes do Zeus}
+
+O Zeus funciona com três aparelhos trabalhando juntos:
+
+\begin{center}
+\begin{tikzpicture}[
+  caixa/.style={draw=zeus,fill=zeusclaro,rounded corners=4pt,thick,align=center,minimum width=4.1cm,minimum height=2.1cm,font=\small},
+  seta/.style={-{Stealth[length=3mm]},thick,color=zeus},
+  rot/.style={font=\footnotesize,color=cinza,align=center}]
+  \node[caixa] (cel) {\textbf{Celular}\\ouve você e fala\\(app Zeus)};
+  \node[caixa,right=3.2cm of cel] (pc) {\textbf{Notebook}\\pensa (Ollama)\\e executa as ações};
+  \node[caixa,below=1.9cm of $(cel)!0.5!(pc)$] (robo) {\textbf{Robô}\\rosto no OLED\\textos e tabuleiro};
+  \draw[seta] ([yshift=3mm]cel.east) -- node[above,rot]{pedido + senha} ([yshift=3mm]pc.west);
+  \draw[seta] ([yshift=-3mm]pc.west) -- node[below,rot]{resposta} ([yshift=-3mm]cel.east);
+  \draw[seta] (cel.south) -- node[left,rot]{cara, texto,\\tabuleiro} (robo.west);
+  \draw[seta,dashed] (robo.east) -- node[right,rot]{o robô busca os\\comandos pela internet} (pc.south);
+\end{tikzpicture}
+\end{center}
+
+\begin{description}[style=nextline,leftmargin=1.2em]
+  \item[Celular] Ouve sua voz, mostra a conversa e fala a resposta. Pode ser Android (app Zeus)
+        ou iPhone (atalho no Safari). Funciona em casa ou fora dela, no WiFi ou no 4G.
+  \item[Notebook] É o cérebro. Um programa chamado \emph{ponte} recebe os pedidos, consulta o
+        modelo de linguagem \texttt{llama3.1:8b} (Ollama) e executa as ações no Windows: abrir
+        programas, webcam, Instagram, WhatsApp, xadrez. \textbf{Precisa estar ligado.}
+  \item[Robô] Uma placa ESP32-S3 com display OLED. Ligado em qualquer WiFi 2,4 GHz com internet,
+        ele busca no notebook, pela internet, o que deve mostrar.
+\end{description}
+
+%======================================================================
+\section{Primeiros passos}
+
+\subsection{Ligue o notebook}
+\begin{enumerate}
+  \item Abra o \textbf{Ollama} (o ícone fica perto do relógio do Windows).
+  \item Inicie o Zeus pela \textbf{Central Cloudflare} (serviço \emph{Robô Zeus (ponte)}) ou
+        rode o script \texttt{Iniciar-Zeus.ps1}, que fica na pasta
+        \texttt{D:\bs{}CLOUDFLARED-SUBDOMINIOS\bs{}scripts}.
+        Isso liga a ponte e o endereço da internet.
+  \item Na primeira mensagem, o modelo é carregado na placa de vídeo. Ele fica pronto por 30 minutos
+        depois de cada uso.
+\end{enumerate}
+
+\subsection{Ligue o robô}
+Ligue a placa no USB. Por 5 segundos, o display mostra \emph{abra no celular:} e o endereço do
+robô na rede (normalmente \texttt{192.168.0.201}). Em seguida aparecem os olhos.
+
+\begin{center}
+\tela{00_splash.png}{ao ligar (endereço de exemplo)}\hspace{0.02\linewidth}
+\tela{01_neutro.png}{pronto}
+\end{center}
+
+O robô se conecta sozinho à ponte do notebook \textbf{pela internet}. Por isso ele fica online no
+app em qualquer rede com internet: com o celular no WiFi de 5 GHz, no 4G ou com o robô em outra
+casa. O app mostra a bolinha \emph{robô} verde poucos segundos depois que ele liga.
+
+\begin{atencao}
+O robô só entra em WiFi de \textbf{2,4 GHz}. O celular e o notebook podem ficar em qualquer rede,
+inclusive a de 5 GHz.
+\end{atencao}
+
+\subsection{Levar o robô para outra rede}
+Ligue o robô no lugar novo. Se ele não conhecer nenhum WiFi dali, o display mostra
+\emph{WiFi: rede ZEUS} e \texttt{192.168.4.1}:
+\begin{enumerate}
+  \item No celular, entre na rede WiFi \textbf{ZEUS} (senha \texttt{12345678}).
+  \item Abra \texttt{http://192.168.4.1} no navegador.
+  \item Escolha a rede do lugar (ou digite o nome), digite a senha e toque em \textbf{Salvar e reiniciar}.
+  \item Volte o celular para o WiFi normal. Em até 1 minuto o robô aparece online no app.
+\end{enumerate}
+O robô guarda até 5 redes cadastradas assim, além da rede de casa, e sempre entra na de melhor
+sinal. Se o WiFi cair, ele procura de novo sozinho. Se ninguém entrar na rede ZEUS em 3 minutos,
+ele reinicia e tenta os WiFi conhecidos outra vez (útil quando o roteador volta depois de uma
+queda de energia).
+
+\subsection{Instale o app no celular}
+
+\textbf{Android:} no celular, abra \url{https://zeus.appdevtest.shop/aplicativos}, toque em
+\emph{Baixar o app para Android} e instale o arquivo \texttt{zeus.apk}. Se o Android pedir, permita
+\emph{instalar apps desta fonte}. Na primeira vez, o app pede o \textbf{microfone} e a
+\textbf{câmera}: aceite os dois.
+
+\textbf{iPhone:} abra \url{https://zeus.appdevtest.shop} no \textbf{Safari}, toque em
+\emph{Compartilhar} e depois em \textbf{Adicionar à Tela de Início}. O ícone do Zeus abre em tela
+cheia, como um app.
+
+\subsection{Digite o código de acesso}
+Pela internet, cada aparelho pede uma vez o \textbf{código de acesso}. Ele está no campo
+\texttt{codigo\_acesso} do arquivo \texttt{D:\bs{}ROBO\_Zeus\bs{}ponte\bs{}zeus\_ponte.json}
+e também aparece na janela da ponte quando ela inicia. Depois disso o aparelho lembra sozinho.
+
+\begin{atencao}
+O código dá controle do seu notebook. Passe só para quem você confia. Depois de 5 tentativas
+erradas, aquele aparelho fica bloqueado por 10 minutos.
+\end{atencao}
+
+%======================================================================
+\section{Usando o app}
+
+\subsection{A tela}
+\begin{longtable}{@{}p{4.3cm}p{11.6cm}@{}}
+\toprule
+\textbf{Elemento} & \textbf{Para que serve} \\ \midrule
+Bolinhas \emph{robô} e \emph{notebook} & Verdes quando o app alcança o robô e o notebook. Vermelha indica o que está fora do ar. \\
+\botao{CONVERSAR} & Ouve um pedido. Durante a conversa vira \botao{ENCERRAR}, que para tudo. \\
+\botao{Modo Alexa} & Deixa o celular ouvindo o tempo todo, esperando a palavra \emph{Zeus}. \\
+Caixa de texto e \botao{{\simbolo ▶}} & Para digitar um pedido em vez de falar. \\
+Atalhos & \emph{que horas são}, \emph{bitcoin}, \emph{temperatura}, \emph{liga/desliga webcam}, \emph{xadrez}, \emph{YouTube}. \\
+Botões de humor & FELIZ, BRAVO, TRISTE, CURIOSO, SURPRESO, SONO: mudam a cara do robô na hora. \\
+\emph{Ajustes} & Endereço da ponte, palavra de acordar, onde a voz sai (notebook ou celular), \emph{testar notebook} e \emph{esquecer o código neste aparelho}. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Modo Alexa}
+Toque em \botao{Modo Alexa}. A tela fica acesa e o celular fica esperando ouvir \textbf{Zeus}.
+\begin{enumerate}
+  \item Diga o nome junto com o pedido: \fala{Zeus, qual a temperatura?}
+  \item Ele responde e \textbf{continua ouvindo} sem precisar do nome: \fala{e o bitcoin?}
+  \item Depois de 20 segundos de silêncio, volta a esperar o nome.
+\end{enumerate}
+
+\begin{dica}
+O reconhecimento de voz do Google às vezes escreve \emph{Deus} ou \emph{seus} em vez de
+\emph{Zeus}. O Zeus aceita essas trocas, mas só no começo da frase. Se ele ouviu algo sem o nome,
+a tela mostra \texttt{ouvi: "..."}. Fale o nome primeiro e faça uma pequena pausa.
+\end{dica}
+
+\begin{nota}
+Enquanto o Zeus fala, o microfone fica desligado, para ele não ouvir a própria voz. Espere ele
+terminar para falar de novo.
+\end{nota}
+
+%======================================================================
+\section{O rosto do Zeus}
+
+O rosto mostra o que o Zeus está sentindo e fazendo. Os olhos piscam, olham em volta e ``respiram''.
+Depois de 60 segundos sem conversa, ele dorme.
+
+\begin{center}
+\tela{01_neutro.png}{neutro}\hfill\tela{02_feliz.png}{feliz}\hfill
+\tela{03_triste.png}{triste}\hfill\tela{04_bravo.png}{bravo}\\[0.5em]
+\tela{05_sono.png}{sono}\hfill\tela{06_curioso.png}{curioso}\hfill
+\tela{07_surpreso.png}{surpreso}\hfill\tela{08_pensando.png}{pensando}\\[0.5em]
+\tela{11_falando.png}{falando}\hfill\tela{11b_boca_aberta.png}{boca aberta}\hfill
+\tela{10_piscando.png}{piscando}\hfill\tela{16_dormindo_sozinho.png}{dormindo}
+\end{center}
+
+\textbf{Falando:} os olhos sobem e aparece uma boca, que abre a cada palavra dita pelo celular.
+
+\textbf{Textos:} respostas curtas aparecem grandes. A hora ocupa a tela toda.
+
+\begin{center}
+\tela{12b_hora.png}{hora}\hfill\tela{12c_curto.png}{texto curto}\hfill
+\tela{12d_medio.png}{texto médio}\hfill\tela{12_texto.png}{texto longo}
+\end{center}
+
+%======================================================================
+\section{Comandos de voz}
+
+Você não precisa decorar frases: fale naturalmente. A tabela traz exemplos que funcionam.
+No Modo Alexa, comece com \emph{Zeus}.
+
+\begin{longtable}{@{}p{3.3cm}p{12.6cm}@{}}
+\toprule
+\textbf{Assunto} & \textbf{Exemplos} \\ \midrule
+\endhead
+Hora e data & \fala{que horas são?} · \fala{que dia é hoje?} \\
+Tempo & \fala{qual a temperatura?} · \fala{vai chover?} \\
+Criptomoedas & \fala{quanto está o bitcoin?} · \fala{e o ethereum?} · \fala{cotação da solana} \\
+Expressões & \fala{fica feliz} · \fala{faz cara de bravo} · \fala{tá com sono?} \\
+Abrir no notebook & \fala{abre o WhatsApp} · \fala{abre o VS Code} · \fala{abre minha agenda} · \fala{abre o Gmail} \\
+Pesquisar & \fala{pesquisa receita de bolo no YouTube} · \fala{pesquisa no Google previsão do tempo} \\
+Fechar & \fala{fecha a aba do YouTube} · \fala{fecha o Instagram} · \fala{fecha a calculadora} \\
+Webcam & \fala{liga a webcam} · \fala{desliga a webcam} \\
+Foto e Instagram & \fala{tira uma foto} · \fala{posta no Instagram com a legenda …} · \fala{pode postar} \\
+WhatsApp & \fala{manda no WhatsApp: chego em 10 minutos} · \fala{pode enviar} · \fala{cancela} \\
+Páginas web & \fala{cria uma página sobre minha loja} · \fala{troca o fundo pra azul} · \fala{abre no Chrome} \\
+Xadrez & \fala{vamos jogar xadrez} · \fala{cavalo f3} · \fala{roque pequeno} · \fala{encerrar xadrez} \\
+Conversa & \fala{conta uma piada} · \fala{me explica o que é fotossíntese} \\
+\bottomrule
+\end{longtable}
+
+\subsection{O que dá para abrir e fechar}
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+\textbf{Abrir} & Apps: WhatsApp, VS Code, Chrome, Explorador, Calculadora, Bloco de Notas,
+Configurações, Spotify. Sites: Agenda, Gmail, Drive, YouTube, GitHub, Maps, Instagram. \\
+\textbf{Fechar abas} & YouTube, Instagram, Gmail, Agenda, Drive, GitHub, Maps e o tabuleiro de xadrez. \\
+\textbf{Fechar apps} & WhatsApp, Calculadora, Bloco de Notas, Spotify, Chrome, Firefox, Explorador, Configurações. \\
+\bottomrule
+\end{tabularx}
+
+\begin{nota}
+Para fechar uma aba, o Zeus traz o navegador para a frente e \textbf{confere} se a aba ativa é a
+pedida antes de apertar Ctrl+W. Se a aba estiver escondida atrás de outra, ele avisa em vez de
+fechar a errada. Programas fecham como no X da janela, então podem perguntar se você quer salvar.
+O VS Code nunca é fechado pelo Zeus, para não perder trabalho.
+\end{nota}
+
+%======================================================================
+\section{Webcam do notebook}
+
+Diga \fala{liga a webcam} ou toque em \botao{liga/desliga webcam}. A imagem da câmera do
+notebook aparece numa \textbf{janela flutuante} no celular.
+
+\begin{itemize}
+  \item \botao{–} minimiza a janela num quadradinho que você pode arrastar pela tela.
+  \item \botao{{\simbolo ✕}} ou \emph{desligar câmera} fecha a janela \textbf{só neste aparelho}.
+  \item \fala{desliga a webcam} desliga a câmera para todo mundo.
+\end{itemize}
+
+\textbf{Vários aparelhos ao mesmo tempo:} se a câmera já está ligada em outro celular, o seu
+apenas entra no vídeo. Ela desliga sozinha quando o último sai, ou em 15 segundos sem ninguém
+assistindo.
+
+\begin{atencao}
+A webcam deste notebook atende \textbf{um programa por vez}. Se o app Câmera do Windows, o Meet
+ou o Zoom estiver usando a câmera, o Zeus avisa e não fecha o programa dos outros. Feche-o e peça
+de novo.
+\end{atencao}
+
+%======================================================================
+\section{Foto no Instagram}
+
+O Zeus posta pelo \textbf{seu Chrome normal}, já logado na sua conta. Para isso, o Chrome precisa
+da extensão \emph{Zeus -- Instagram} (instalação no Apêndice~\ref{ap:extensao}).
+
+\subsection{Passo a passo}
+\begin{enumerate}
+  \item \fala{Zeus, abre o Instagram} — abre (ou traz para a frente) a aba do Instagram no notebook.
+  \item \fala{tira uma foto} — a câmera do celular abre. Aponte e aperte o botão. A foto vai para a
+        galeria do celular (pasta \emph{Pictures/Zeus}) e para o notebook.
+  \item \fala{posta no Instagram com a legenda Pôr do sol na praia} — o Zeus monta o post
+        (Criar → foto → Avançar → Avançar → legenda) e \textbf{para antes de Compartilhar}.
+  \item Ele lê a legenda e pergunta se pode postar.
+  \item \fala{pode postar} publica. \fala{não} ou \fala{cancela} descarta.
+\end{enumerate}
+
+Depois de publicar, o Zeus clica em \textbf{Concluir} na mensagem ``Seu post foi compartilhado''
+e \textbf{apaga a foto}: do app, do notebook e da galeria do celular (app Android 1.3.0 ou mais
+novo). Assim a mesma foto não é postada duas vezes por engano.
+
+\begin{atencao}
+Nada é publicado sem você dizer \fala{pode postar} \textbf{depois} de ouvir a legenda. Se você
+fechar o Instagram (\fala{fecha o Instagram}), o post que estava esperando é descartado.
+\end{atencao}
+
+%======================================================================
+\section{WhatsApp}
+
+\begin{enumerate}
+  \item Deixe o WhatsApp do notebook aberto na conversa certa (\fala{abre o WhatsApp} ajuda).
+  \item \fala{manda no WhatsApp: chego em 10 minutos}. O Zeus escreve o texto no chat,
+        \textbf{sem enviar}, e lê para você.
+  \item \fala{pode enviar} envia. \fala{não} ou \fala{cancela} apaga o rascunho.
+\end{enumerate}
+
+Por segurança, o Zeus só aperta teclas se a janela da frente for mesmo o WhatsApp. Se for outra,
+ele recusa em vez de digitar no lugar errado.
+
+%======================================================================
+\section{Páginas web por voz}
+
+\begin{enumerate}
+  \item \fala{cria uma página escrito Bem-vindo à Padaria do João} — o Zeus escreve a página e
+        abre no Chrome do notebook.
+  \item Peça mudanças: \fala{troca o fundo pra azul}, \fala{coloca uma foto de pão},
+        \fala{aumenta o título}. O Chrome recarrega sozinho.
+  \item \fala{abre no VS Code} mostra o código.
+\end{enumerate}
+
+As fotos vêm de um banco de imagens de uso livre (Openverse). A página fica só no notebook e não
+aparece na internet.
+
+%======================================================================
+\section{Xadrez}
+
+\fala{vamos jogar xadrez} começa uma partida. Você joga de brancas, a não ser que peça
+\fala{eu jogo de pretas}. Dá para pedir a força: \fala{joga no nível 5} (de 1 a 10; o padrão é 3).
+
+\begin{center}
+\tela{13_xadrez_inicio.png}{início}\hspace{0.02\linewidth}
+\tela{14_xadrez_meio.png}{meio de jogo}\hspace{0.02\linewidth}
+\tela{15_xadrez_pretas.png}{jogando de pretas}
+\end{center}
+
+\textbf{Como jogar:} fale o lance (\fala{e4}, \fala{cavalo f3}, \fala{bispo toma c4},
+\fala{roque pequeno}, \fala{peão e8 vira dama}) ou toque nas casas do tabuleiro no celular:
+primeiro na peça, depois no destino.
+
+\begin{itemize}
+  \item O lance do Zeus é escolhido pelo \textbf{Stockfish}, um motor de xadrez de verdade, e não
+        pelo modelo de linguagem. Lances ilegais são recusados.
+  \item \botao{ver no notebook} ou \fala{mostra o tabuleiro no notebook} abre o tabuleiro no Chrome.
+  \item \botao{encerrar partida} ou \fala{encerrar xadrez} termina o jogo.
+\end{itemize}
+
+\textbf{Cada celular tem a sua partida.} Várias pessoas podem jogar ao mesmo tempo, cada uma no
+seu aparelho, sem uma mexer no jogo da outra. Ao fechar e abrir o app, a sua partida volta de onde
+parou (uma partida parada por mais de 7 dias é apagada).
+
+\textbf{No robô:} o tabuleiro fica só no celular. Na vez do Zeus, o display mostra ele pensando,
+com \emph{calculando...} e o nome do seu aparelho na faixa de cima; depois aparece o lance dele.
+
+\begin{center}
+\tela{17b_calculando_vs.png}{calculando}\hspace{0.02\linewidth}
+\tela{17_calculando.png}{contra quem}\hspace{0.02\linewidth}
+\tela{18_lance_zeus.png}{o lance do Zeus}
+\end{center}
+
+\textbf{O nome do aparelho} vem do celular (no Android, o nome em Configurações → Sobre o
+telefone). Para usar outro, escreva em \emph{Ajustes → Nome deste aparelho}.
+
+\textbf{Painel no notebook:} abra \texttt{http://127.0.0.1:8770/xadrez} no navegador do notebook
+(ou toque em \botao{ver no notebook}). Ele mostra todos os tabuleiros lado a lado, quem está
+ligado, quando o Zeus está calculando, o placar de cada aparelho e o placar geral
+\textbf{Zeus × aparelhos}. O placar fica guardado mesmo se o notebook reiniciar.
+
+%======================================================================
+\section{Segurança e privacidade}
+
+\begin{itemize}
+  \item \textbf{O cérebro roda no notebook.} As conversas com o modelo não vão para nenhuma empresa.
+  \item O \textbf{reconhecimento de voz} é o do Android/Google (ou da Apple, no iPhone); dependendo do
+        aparelho, o áudio pode passar pela internet.
+  \item O notebook só aceita uma \textbf{lista fixa de ações}. O Zeus nunca roda comandos livres no Windows.
+  \item Pela internet, todo aparelho precisa do \textbf{código de acesso}. Na rede de casa, as ações
+        exigem uma senha interna (token) que o robô entrega ao app.
+  \item \textbf{Instagram e WhatsApp} só publicam ou enviam depois da sua confirmação falada.
+  \item As páginas criadas por voz e o tabuleiro do notebook não aparecem na internet.
+\end{itemize}
+
+\begin{atencao}
+Quem está no seu WiFi pode abrir a página do robô e, com ela, controlar o notebook. Use o Zeus em
+rede de confiança. Para tirar o acesso de um aparelho, use \emph{Ajustes → esquecer o código neste
+aparelho}. Para tirar de todos, troque o \texttt{codigo\_acesso} em \texttt{zeus\_ponte.json} e
+reinicie a ponte.
+\end{atencao}
+
+%======================================================================
+\section{Solução de problemas}
+
+\begin{longtable}{@{}p{5cm}p{10.9cm}@{}}
+\toprule
+\textbf{Problema} & \textbf{O que fazer} \\ \midrule
+\endhead
+Fica em ``Pensando'' & Espere até 1 minuto: todo pedido tem prazo e ele avisa se o notebook
+demorou. Depois de 45 s preso, um comando novo assume o lugar do antigo. \botao{ENCERRAR}
+destrava na hora. Se acontecer sempre, veja se o Ollama está aberto. \\
+Não acorda com ``Zeus'' & Fale o nome no começo, com uma pausa curta. Veja o que aparece em
+\texttt{ouvi: "..."}. Dá para trocar a palavra em \emph{Ajustes}. \\
+Bolinha \emph{notebook} vermelha & O notebook está desligado, a ponte não está rodando ou a
+internet caiu. Rode \texttt{Iniciar-Zeus.ps1}. Em \emph{Ajustes}, toque em \emph{testar notebook}. \\
+Bolinha \emph{robô} vermelha & Veja se o robô está ligado e mostra os olhos. Se o display mostrar
+\emph{WiFi: rede ZEUS}, ele não achou um WiFi conhecido: cadastre a rede (Seção~3, \emph{Levar o
+robô para outra rede}). Se mostrar os olhos, confira se o notebook está ligado com a ponte
+rodando: o robô fala com o app através dela. \\
+``O Ollama não respondeu'' & Abra o app Ollama no notebook e peça de novo. A primeira resposta
+depois de muito tempo parado demora mais, porque o modelo é carregado de novo. \\
+``O cérebro está ocupado'' & Outro aparelho está usando o Zeus. Espere a resposta dele e peça de novo. \\
+Webcam não liga & Outro programa está usando a câmera (Câmera do Windows, Meet, Zoom). Feche-o. \\
+Instagram não posta & O Chrome precisa estar aberto com a aba do Instagram logada. Em
+\texttt{chrome://extensions}, confira se \emph{Zeus -- Instagram} está ativa e clique em
+\emph{Recarregar}. Depois aperte F5 na aba do Instagram. \\
+A foto não sai da galeria & Atualize o app Android para a versão 1.3.0 em \emph{/aplicativos}. \\
+Código recusado / bloqueado & Confira o código em \texttt{zeus\_ponte.json}. Depois de 5 erros,
+espere 10 minutos. \\
+Fechar aba não funciona & Deixe a aba pedida visível (na frente) na janela do navegador. \\
+A boca não mexe & Com a voz no notebook, quem mexe a boca é o notebook: confira se o robô está
+online. Com a voz no celular, o app Android acompanha cada palavra; o iPhone e o navegador seguem
+um ritmo simulado. \\
+Sem som no notebook & Confira o volume e a saída de áudio do Windows. Se o notebook não conseguir
+falar, a voz sai no celular. \\
+Respondeu outra coisa & Se ele falou de outro assunto, repita o pedido com uma palavra clara
+(\emph{horas}, \emph{temperatura}, \emph{abre}, \emph{fecha}). Cumprimentos como \fala{boa noite}
+são só conversa. \\
+\bottomrule
+\end{longtable}
+
+%======================================================================
+\section{Limitações conhecidas}
+\begin{itemize}
+  \item Não dá para interromper o Zeus com a voz enquanto ele fala; o botão \botao{ENCERRAR} corta a fala.
+  \item A voz do notebook (Piper, voz \emph{faber}) roda no próprio notebook, sem internet; o
+        notebook precisa estar perto de você para ouvir.
+  \item Um modelo de 8 bilhões de parâmetros às vezes formula mal uma frase. Números, hora,
+        clima, cotações e lances de xadrez vêm sempre das funções, nunca da imaginação do modelo.
+  \item O notebook precisa estar ligado, com a ponte e o Ollama rodando. O modelo ocupa cerca de
+        5 GB da placa de vídeo.
+  \item O iPhone não tem app na App Store: usa o atalho na Tela de Início.
+\end{itemize}
+
+%======================================================================
+\appendix
+\section{Instalar a extensão do Instagram}\label{ap:extensao}
+Uma vez só, no Chrome do notebook:
+\begin{enumerate}
+  \item Abra \texttt{chrome://extensions}.
+  \item Ligue o \textbf{Modo do desenvolvedor} (canto superior direito).
+  \item Clique em \textbf{Carregar sem compactação} e escolha esta pasta:\\
+        \texttt{D:\bs{}ROBO\_Zeus\bs{}ponte\bs{}extensao\_instagram}
+  \item Entre no Instagram nesse Chrome com sua conta, se ainda não estiver logado.
+\end{enumerate}
+A ponte grava o endereço e a senha da extensão sempre que inicia. Quando a extensão for atualizada,
+clique em \emph{Recarregar} no cartão dela e aperte F5 na aba do Instagram.
+
+\section{Informações técnicas}\label{ap:tecnico}
+
+\subsection{Endereços e portas}
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+\textbf{O quê} & \textbf{Endereço} & \textbf{Observação} \\ \midrule
+Robô (ESP32-S3) & \texttt{http://192.168.0.201} & IP fixo; aparece no OLED ao ligar \\
+Ponte do notebook & \texttt{http://192.168.0.33:8770} & Muda em \emph{Ajustes} se o IP mudar \\
+Ollama & \texttt{127.0.0.1:11434} & Só dentro do notebook \\
+Internet & \texttt{https://zeus.appdevtest.shop} & Túnel Cloudflare APPDEVTEST \\
+Downloads & \texttt{/aplicativos} & APK Android e passo a passo do iPhone \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Pastas}
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily}l X@{}}
+\toprule
+\textbf{\rmfamily Pasta} & \textbf{Conteúdo} \\ \midrule
+firmware\bs{}& Programa do robô (ESP-IDF 6.0.2). \texttt{main\bs{}secrets.h} guarda WiFi, cidade e ponte. \\
+ponte\bs{}& Ponte do notebook (\texttt{zeus\_ponte.py}), configuração \texttt{zeus\_ponte.json}, extensão do Instagram, fotos e APK publicado. \\
+android\bs{}& App Android (\texttt{br.com.zeus.robo}). \\
+sim\bs{}& Simulador do OLED no PC (gera as telas deste manual). \\
+tools\bs{}& \texttt{esp\_sim.py}: finge ser o robô para testar sem a placa. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Gravar o robô}
+Com a placa na \textbf{COM6}, num PowerShell:
+\begin{verbatim}
+C:\Espressif\v6.0.2\esp-idf\export.ps1
+idf.py -C D:\ROBO_Zeus\firmware build
+idf.py -C D:\ROBO_Zeus\firmware -p COM6 flash monitor
+\end{verbatim}
+
+\subsection{Ponte do notebook (instalação)}
+\begin{verbatim}
+cd D:\ROBO_Zeus\ponte
+py -3.13 -m pip install -r requirements.txt
+ollama pull llama3.1:8b
+py -3.13 zeus_ponte.py
+\end{verbatim}
+Para trocar o modelo, edite \texttt{"modelo"} em \texttt{zeus\_ponte.json}. O modelo novo
+precisa suportar chamada de funções (\texttt{tools} em \texttt{ollama show <modelo>}).
+
+\subsection{Compilar e publicar o app Android}
+\begin{verbatim}
+$env:JAVA_HOME='D:\ROBOZINHA_ANDROID\tools\jdk-21.0.8+9'
+$env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"
+cd D:\ROBO_Zeus\android
+D:\ROBOZINHA_ANDROID\tools\gradle-8.11.1\bin\gradle.bat assembleDebug --offline
+copy app\build\outputs\apk\debug\app-debug.apk ..\ponte\aplicativos\zeus.apk
+\end{verbatim}
+Para ver o que o app ouve: \texttt{adb logcat -s ZeusApp}.
+
+\subsection{Testes}
+\begin{verbatim}
+cd D:\ROBO_Zeus\ponte
+py -3.13 -m unittest test_zeus_ponte     # 48 testes, sem tocar no Windows real
+py -3.13 D:\ROBO_Zeus\tools\esp_sim.py   # página do robô em http://localhost:8090
+\end{verbatim}
+
+\end{document}

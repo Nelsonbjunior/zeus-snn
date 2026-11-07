@@ -1,0 +1,1739 @@
+% Rede Neural de Disparos (SNN) do Robô Zeus — documento técnico.
+% Gerar tudo (dados + PDF): gerar.bat   |   só o PDF: xelatex Rede_Neural_SNN_Zeus.tex (duas passadas)
+% Os gráficos e os números marcados com \v... vêm de dados\ (sonda.c roda a mesma zeus_snn.c do firmware).
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2cm,top=2.3cm,bottom=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{fontspec}
+\usepackage[brazil]{babel}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs,tabularx,longtable,array,multirow}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{enumitem}
+\usepackage{needspace}
+\usepackage{fancyvrb}
+\usepackage{fvextra}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{calc,positioning,arrows.meta,shapes.geometric,fit,backgrounds}
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.18}
+\usepackage{pgfplotstable}
+\usepackage[hidelinks,bookmarksnumbered]{hyperref}
+
+\setmainfont{Segoe UI}
+\setsansfont{Segoe UI}
+\setmonofont{Consolas}[Scale=0.88]
+\newfontfamily\fino{Segoe UI Light}[ItalicFont={Segoe UI Light Italic}]
+\usetikzlibrary{fadings}
+\definecolor{capaFundo}{HTML}{070809}
+\definecolor{capaCiano}{HTML}{22C1E0}
+\definecolor{capaLaranja}{HTML}{F0592A}
+
+\definecolor{zeus}{HTML}{1E5AA8}
+\definecolor{zeusclaro}{HTML}{E8F0FB}
+\definecolor{alerta}{HTML}{B54708}
+\definecolor{alertaclaro}{HTML}{FEF3E2}
+\definecolor{ok}{HTML}{1F7A4D}
+\definecolor{okclaro}{HTML}{E7F5EE}
+\definecolor{cinza}{HTML}{5B6573}
+\definecolor{codfundo}{HTML}{F6F8FA}
+% populações
+\definecolor{cSen}{HTML}{7A8699}
+\definecolor{cExc}{HTML}{1E5AA8}
+\definecolor{cInh}{HTML}{C0392B}
+\definecolor{cEmo}{HTML}{8E44AD}
+\definecolor{cMot}{HTML}{D68910}
+\definecolor{cDa}{HTML}{1F7A4D}
+% emoções
+\definecolor{eAle}{HTML}{E5A50A}
+\definecolor{eTri}{HTML}{3465A4}
+\definecolor{eRai}{HTML}{CC0000}
+\definecolor{eSon}{HTML}{75507B}
+\definecolor{eCur}{HTML}{4E9A06}
+\definecolor{eSur}{HTML}{F57900}
+\definecolor{eFoc}{HTML}{555753}
+\colorlet{eAleEsc}{eAle!80!black}
+
+\hypersetup{pdftitle={Rede Neural de Disparos (SNN) do Robô Zeus},pdfauthor={Robô Zeus},pdflang={pt-BR}}
+
+\titleformat{\section}{\Large\bfseries\color{zeus}}{\thesection}{0.6em}{}[\vspace{-0.4em}\color{zeus!40}\rule{\linewidth}{0.6pt}]
+\titleformat{\subsection}{\large\bfseries\color{zeus!85!black}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{zeus!70!black}}{\thesubsubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.4em}{0.8em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{cinza}Rede Neural SNN do Robô Zeus — documento técnico}
+\fancyhead[R]{\small\color{cinza}Edição de 01/11/2026}
+\fancyfoot[C]{\small\color{cinza}Página \thepage\ de \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\renewcommand{\arraystretch}{1.25}
+
+\newtcolorbox{exemplo}[1][]{enhanced,breakable,colback=okclaro,colframe=ok,boxrule=0pt,leftrule=3pt,arc=2pt,
+  left=8pt,right=8pt,top=5pt,bottom=5pt,title={Exemplo numérico#1},coltitle=ok,colbacktitle=okclaro,fonttitle=\bfseries,
+  attach title to upper={\par\smallskip}}
+\newtcolorbox{atencao}{enhanced,breakable,colback=alertaclaro,colframe=alerta,boxrule=0pt,leftrule=3pt,arc=2pt,
+  left=8pt,right=8pt,top=5pt,bottom=5pt,title={Atenção},coltitle=alerta,colbacktitle=alertaclaro,fonttitle=\bfseries,
+  attach title to upper={\ \ }}
+\newtcolorbox{nota}{enhanced,breakable,colback=zeusclaro,colframe=zeus,boxrule=0pt,leftrule=3pt,arc=2pt,
+  left=8pt,right=8pt,top=5pt,bottom=5pt}
+
+\DeclareRobustCommand{\cod}[1]{\texttt{\detokenize{#1}}}
+\DeclareRobustCommand{\arq}[1]{\texttt{\detokenize{#1}}}
+\pdfstringdefDisableCommands{\def\cod#1{\detokenize{#1}}\def\arq#1{\detokenize{#1}}}
+% edição limpa (LinkedIn): Rede_Neural_SNN_Zeus_LinkedIn.tex define \edicaolimpa; \pal{original}{limpo}
+\newcommand{\pal}[2]{\ifdefined\edicaolimpa#2\else#1\fi}
+\newcommand{\ms}{\,\mathrm{ms}}
+\newcommand{\Hz}{\,\mathrm{Hz}}
+
+\lstdefinestyle{c}{language=C,basicstyle=\ttfamily\footnotesize,keywordstyle=\color{zeus}\bfseries,
+  commentstyle=\color{ok}\itshape,stringstyle=\color{alerta},numbers=left,numberstyle=\tiny\color{cinza},
+  numbersep=6pt,backgroundcolor=\color{codfundo},frame=leftline,rulecolor=\color{zeus!50},breaklines=true,
+  breakatwhitespace=false,columns=fullflexible,keepspaces=true,showstringspaces=false,tabsize=4,
+  xleftmargin=14pt,framexleftmargin=4pt,
+  literate={á}{{\'a}}1 {à}{{\`a}}1 {â}{{\^a}}1 {ã}{{\~a}}1 {é}{{\'e}}1 {ê}{{\^e}}1 {í}{{\'i}}1 {ó}{{\'o}}1
+           {ô}{{\^o}}1 {õ}{{\~o}}1 {ú}{{\'u}}1 {ç}{{\c c}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Ç}{{\c C}}1 {Ã}{{\~A}}1}
+\lstdefinestyle{py}{style=c,language=Python}
+\lstset{style=c}
+
+\input{dados/valores.tex}
+
+\pgfplotstableread[col sep=comma]{dados/lif.csv}\tabLif
+\pgfplotstableread[col sep=comma]{dados/raster.csv}\tabRaster
+\pgfplotstableread[col sep=comma]{dados/cena.csv}\tabCena
+\pgfplotstableread[col sep=comma]{dados/aprendizado.csv}\tabAprend
+\pgfplotstableread[col sep=comma]{dados/tentativas.csv}\tabTent
+\pgfplotstableread[col sep=comma]{dados/histograma.csv}\tabHist
+
+\pgfplotsset{zeus/.style={width=\linewidth,height=4.2cm,grid=major,grid style={gray!20},
+  tick label style={font=\scriptsize},label style={font=\small},legend style={font=\scriptsize,draw=none,fill=white,fill opacity=0.85,text opacity=1},
+  axis line style={gray!60},every axis plot/.append style={line join=round}}}
+
+\begin{document}
+
+% ------------------------------------------------------------------ capa
+\begin{titlepage}
+\begin{tikzpicture}[remember picture,overlay]
+  \coordinate (NO) at (current page.north west);
+  \coordinate (NE) at (current page.north east);
+  % fundo escuro em toda a página
+  \fill[capaFundo] ([shift={(-1cm,-1cm)}]current page.south west) rectangle ([shift={(1cm,1cm)}]NE);
+  % arte do grafo da rede (16:9) no topo, esmaecendo para o fundo
+  \node[anchor=north,inner sep=0pt] at (current page.north)
+    {\includegraphics[width=\dimexpr\paperwidth+4pt\relax]{img/capa_rede.png}};
+  \fill[capaFundo,path fading=north] ([yshift=-9.4cm,xshift=-1cm]NO) rectangle ([yshift=-11.6cm,xshift=1cm]NE);
+  \fill[capaFundo] ([yshift=-11.55cm,xshift=-1cm]NO) rectangle ([yshift=-31cm,xshift=1cm]NE);
+  % rótulo superior
+  \node[anchor=north west,text=white,font=\fino\small,align=left]
+    at ([xshift=2cm,yshift=-1.5cm]NO) {\addfontfeature{LetterSpace=18}DOCUMENTO TÉCNICO};
+  \draw[capaLaranja,line width=1.2pt] ([xshift=2cm,yshift=-2.15cm]NO) -- ++(1.4,0);
+  % traço de grafo em cinza (canto inferior esquerdo)
+  \begin{scope}[shift={([yshift=1cm]current page.south west)},gray!30!capaFundo,line width=0.4pt]
+    \foreach \p/\x/\y in {a/0.6/9.2,b/2.4/7.6,c/1.1/5.9,d/3.5/4.6,e/0.4/3.3,f/2.6/2.2,g/4.6/7.1,h/5.2/1.4,i/1.5/0.5,j/3.4/9.8}
+      {\coordinate (\p) at (\x,\y);}
+    \foreach \u/\v in {a/b,a/c,b/c,b/g,b/j,c/d,c/e,d/e,d/f,d/g,e/f,f/h,f/i,e/i,g/j,a/j,d/h}
+      {\draw (\u) -- (\v);}
+    \foreach \p in {a,b,c,d,e,f,g,h,i,j}{\fill[gray!45!capaFundo] (\p) circle (1.8pt);}
+    \fill[gray!30!capaFundo] (d) circle (3.4pt);
+  \end{scope}
+\end{tikzpicture}
+
+\vspace*{11.4cm}
+\begin{flushright}
+{\color{white}\fino\fontsize{38}{44}\selectfont Rede Neural de Disparos\par}
+\vspace{0.25cm}
+{\color{capaCiano}\fino\fontsize{26}{32}\selectfont SNN do Robô Zeus\par}
+\vspace{0.5cm}
+\begin{tikzpicture}
+  \shade[left color=capaLaranja,right color=capaCiano] (0,0) rectangle (9.5,0.06);
+\end{tikzpicture}\par
+\vspace{0.45cm}
+{\color{white!80}\fino\itshape\Large Modelo, cálculos, aprendizado e integração\\
+com o microcontrolador ESP32-S3 e com o LLM\par}
+\vspace{1.6cm}
+{\color{white!70}\fino\normalsize
+\begin{tabular}{@{}r@{\hspace{0.8em}}l@{}}
+\color{capaCiano}Plataforma & ESP32-S3, 240\,MHz, núcleo dedicado \\
+\color{capaCiano}Rede & 266 neurônios LIF · \vNSin\ sinapses · \vNPl\ plásticas \\
+\color{capaCiano}Aprendizado & STDP modulada por dopamina (R-STDP) \\
+\color{capaCiano}Base de pesquisa & Nelson Barbosa dos Santos Junior — Faculdade Fucapi, 2012.2 \\
+\end{tabular}\par}
+\vfill
+{\color{white!60}\fino\small Manaus–AM \quad·\quad Edição de 01/11/2026\par}
+\end{flushright}
+\end{titlepage}
+\setcounter{page}{2}
+
+% ------------------------------------------------------------------ prefácio
+\section*{Prefácio}
+\addcontentsline{toc}{section}{Prefácio}
+
+Este documento descreve, com rigor técnico e com exemplos numéricos verificáveis, a rede neural de disparos
+(\emph{Spiking Neural Network}, SNN) embarcada no Robô Zeus. Ele documenta o modelo matemático do neurônio, a topologia da rede,
+a regra de aprendizado por reforço e a integração com o firmware do microcontrolador ESP32-S3 e com um modelo de linguagem de
+grande porte (LLM).
+
+\subsection*{Origem e créditos}
+
+O projeto foi desenvolvido a partir dos arquivos cedidos por \textbf{Nelson Barbosa dos Santos Junior}, oriundos do seu trabalho
+de pesquisa \emph{“Rede neurais naturais nos microcontroladores de 32 bits baseados na arquitetura ARM Cortex-M”}~\cite{santos2012}, realizado no
+\textbf{Curso de Engenharia da Computação (ECP) da Faculdade Fucapi}, turma \textbf{2012.2}, em Manaus–AM.
+
+Registra-se aqui o reconhecimento por essa contribuição. Aquele trabalho já tratava da execução de redes neurais inspiradas na
+biologia em microcontroladores de 32 bits, com recursos limitados. O presente projeto dá continuidade a essa linha ao embarcar uma
+rede neural de disparos num microcontrolador de 32 bits, o ESP32-S3. O material cedido serviu também de base conceitual para a
+\textbf{aplicação da Teoria dos Grafos}, que trata a rede neural como o que ela é em essência: um \emph{grafo dirigido e ponderado}. Nesse grafo, os neurônios
+são vértices, as sinapses são arestas e os pesos sinápticos são a função de ponderação. O aprendizado, por sua vez, é um
+processo que modifica continuamente essa função de ponderação ao longo do tempo.
+
+Essa leitura em grafos atravessa todo o trabalho. Ela aparece:
+\begin{itemize}
+  \item na construção da rede como um modelo estocástico por blocos;
+  \item na representação das sinapses por listas de adjacência compactas (CSR) e pelo grafo transposto usado no aprendizado;
+  \item na análise de componentes fortemente conexas, que separa o núcleo recorrente das camadas de leitura;
+  \item nas distâncias mínimas entre estímulo e resposta.
+\end{itemize}
+A Subseção~\ref{sec:grafo} formaliza esses conceitos e apresenta as métricas medidas na rede real.
+
+\subsection*{Fundamentação matemática}
+
+Uma SNN situa-se na interseção de várias disciplinas da formação em Engenharia da Computação. A tabela a seguir relaciona as
+disciplinas de cálculo e de matemática aplicada que este trabalho utiliza, os conteúdos aplicados e onde cada um aparece no texto.
+
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{3.7cm}>{\raggedright\arraybackslash}p{10.4cm}c@{}}
+\toprule
+\textbf{Disciplina} & \textbf{Conteúdo aplicado à SNN} & \textbf{Seção} \\
+\midrule
+\endhead
+Teoria dos Grafos e Matemática Discreta & Grafo dirigido ponderado $G=(V,E,w)$; matriz de adjacência; graus de entrada e saída;
+  densidade; reciprocidade; grafo transposto; componentes fortemente conexas e condensação acíclica (DAG); grafo-quociente das
+  populações; modelo estocástico por blocos (generalização de Erdős–Rényi). & \ref{sec:arq} \\
+Cálculo Diferencial e Integral I & Derivada como taxa de variação do potencial de membrana; função exponencial $e^{-t/\tau}$ e
+  constantes de tempo; máximo de função pelo anulamento da derivada (pico do potencial pós-sináptico). & \ref{sec:lif} \\
+Cálculo Diferencial e Integral II & Integral de convolução da corrente sináptica; área sob o potencial pós-sináptico; janelas
+  exponenciais do STDP como núcleos integráveis; aproximações por série de Taylor ($e^{-x}\approx 1-x$). & \ref{sec:lif}, \ref{sec:stdp} \\
+Equações Diferenciais Ordinárias & EDO linear de 1ª ordem do modelo LIF; solução homogênea e particular; sistema acoplado
+  potencial–corrente; equilíbrio e estabilidade; adaptação do limiar como EDO com termo impulsivo. & \ref{sec:lif} \\
+Séries e Sequências & Séries geométricas no regime estacionário da dopamina e da adaptação; convergência de recorrências
+  lineares $x_{n+1}=a\,x_n+b$, com ponto fixo $b/(1-a)$ para $|a|<1$. & \ref{sec:lif}, \ref{sec:stdp} \\
+Cálculo Numérico & Discretização de Euler $\times$ integração exata por fator de decaimento; passo de 1\,ms; erro de
+  truncamento; representação em ponto fixo de 16 bits e arredondamento estocástico. & \ref{sec:lif}, \ref{sec:arq} \\
+Álgebra Linear & Matriz de pesos $W\in\mathbb{R}^{266\times266}$ esparsa; corrente de entrada como produto $W^{\mathsf T}s(t)$;
+  normalização como escalonamento de linhas. & \ref{sec:arq}, \ref{sec:dinamica}, \ref{sec:stdp} \\
+Probabilidade, Estatística e Processos Estocásticos & Processo de Poisson dos neurônios sensoriais; ruído triangular como soma
+  de uniformes (variância e desvio-padrão); processo autorregressivo AR(1) do potencial; ensaios de Bernoulli na construção da
+  rede; esperança do arredondamento estocástico. & \ref{sec:lif}, \ref{sec:sensorial}, \ref{sec:arq} \\
+Sinais e Sistemas / Processamento Digital de Sinais & Média móvel exponencial como filtro IIR de 1ª ordem; transformada $\mathcal{Z}$,
+  polo, resposta ao impulso e ao degrau, frequência de corte; traços sinápticos como filtros passa-baixas de eventos. & \ref{sec:leituras} \\
+Sistemas de Controle e Sistemas Dinâmicos & Realimentação negativa (adaptação do limiar, inibição lateral, normalização
+  homeostática como controle proporcional); histerese na decisão do humor; tempo de acomodação. & \ref{sec:lif}, \ref{sec:leituras}, \ref{sec:stdp} \\
+Estruturas de Dados e Análise de Algoritmos & Formato CSR (lista de adjacência compacta); custo $O(k_\text{out})$ por disparo;
+  busca em largura (BFS) e algoritmo de Kosaraju em $O(|V|+|E|)$. & \ref{sec:arq}, \ref{sec:dinamica} \\
+Arquitetura de Computadores e Sistemas Embarcados & Orçamento de RAM e de CPU; tarefas de tempo real em núcleo dedicado; memória
+  não volátil (NVS) e formato binário de persistência. & \ref{sec:firmware} \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\subsection*{Referencial teórico}
+
+A fundamentação teórica retoma a bibliografia de redes neurais e de neurociência computacional estudada na época da pesquisa
+original~\cite{santos2012}:
+\begin{itemize}
+  \item a obra de Gerstner e Kistler~\cite{gerstner2002}, referência canônica para os modelos \emph{integrate-and-fire}, a
+        dinâmica de populações e a plasticidade STDP;
+  \item a obra de Izhikevich~\cite{izhikevich2007}, para a análise de sistemas dinâmicos e da excitabilidade neuronal;
+  \item o Neocognitron de Fukushima~\cite{fukushima1980}, precursor das redes convolucionais e exemplo pioneiro de aprendizado sem
+        retropropagação;
+  \item a introdução sistemática de Rojas~\cite{rojas1996}, para a formulação matemática das redes neurais artificiais clássicas.
+\end{itemize}
+As referências completas estão ao final do documento, antes dos anexos.
+
+\subsection*{Metodologia e reprodutibilidade}
+
+Todos os gráficos e valores numéricos marcados no texto são produzidos pelo próprio código-fonte do firmware, compilado no
+computador por um programa de sondagem com a mesma semente pseudoaleatória do robô. Assim, cada afirmação quantitativa pode ser
+reproduzida e auditada: basta executar \arq{docs/snn/gerar.bat}, que refaz os dados, executa o banco de testes e recompila este
+documento. Sempre que possível, os exemplos resolvidos analiticamente são comparados com os valores medidos. Um exemplo é o regime
+estacionário da dopamina sob bronca contínua: o valor teórico é $-0{,}451$ e o simulado é $\vDaBronca$.
+
+\subsection*{Organização do documento}
+
+\begin{itemize}
+  \item As Seções~\ref{sec:lif} a~\ref{sec:dinamica} apresentam o modelo do neurônio, os estímulos sensoriais, a arquitetura em
+        grafo e a dinâmica temporal.
+  \item As Seções~\ref{sec:leituras} e~\ref{sec:stdp} tratam das leituras e do aprendizado por reforço.
+  \item As seções seguintes cobrem a integração com o firmware e com o LLM, a validação experimental, a tabela de parâmetros e as
+        limitações conhecidas.
+  \item Os anexos reproduzem integralmente o código-fonte e um glossário.
+\end{itemize}
+
+\vspace{0.8em}
+\begin{flushright}
+\small\color{cinza}Manaus–AM, novembro de 2026.
+\end{flushright}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ================================================================== 1
+\section{Visão geral}
+
+O Zeus tem dois “cérebros” trabalhando ao mesmo tempo:
+
+\begin{itemize}
+  \item \textbf{LLM} (\texttt{llama3.1:8b} no PC, via Ollama): entende e gera linguagem, decide funções (pesquisar, jogar xadrez, abrir páginas).
+  \item \textbf{SNN} (rede neural de disparos) rodando \textbf{dentro do ESP32-S3}: 266 neurônios do tipo LIF que trocam pulsos elétricos
+        a cada milissegundo. Ela sente o ambiente (fala, silêncio, carinho, bronca, LLM pensando, jogo…), produz \textbf{emoções},
+        escolhe o \textbf{humor} e os \textbf{gestos} do rosto no display e \textbf{aprende continuamente} por reforço (dopamina).
+\end{itemize}
+
+As duas redes conversam nos dois sentidos: o que a pessoa fala vira estímulo para a SNN, e o estado da SNN (emoções, energia,
+personalidade) vai junto no prompt do LLM, que responde no tom de como o robô “está se sentindo”. Quando o LLM escolhe uma cara, essa
+escolha vira uma \emph{lição} para a SNN (sinal de professor).
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[font=\small,
+  bloco/.style={draw=#1,fill=#1!8,rounded corners=3pt,minimum height=1cm,align=center,line width=0.8pt},
+  seta/.style={-{Stealth[length=2.2mm]},line width=0.7pt,gray!70!black}]
+  \node[bloco=cinza,minimum width=2.4cm] (pessoa) {Pessoa\\(voz no celular)};
+  \node[bloco=zeus,right=1.3cm of pessoa,minimum width=3.4cm] (ponte) {Ponte (PC)\\\arq{zeus_ponte.py}\\\arq{cerebro_snn.py}};
+  \node[bloco=alerta,right=3.2cm of ponte,minimum width=2.4cm] (llm) {LLM\\llama3.1:8b};
+  \node[bloco=cEmo,below=1.9cm of ponte,minimum width=5.2cm,minimum height=1.6cm] (snn) {\textbf{ESP32-S3}\\SNN 266 neurônios (\cod{cerebro_task}, 1 ms)\\\arq{zeus_snn.c} + \arq{zeus_cerebro.c}};
+  \node[bloco=ok,left=2.0cm of snn,minimum width=2.4cm] (oled) {OLED 128×64\\rosto + gestos};
+  \node[bloco=cinza,right=1.4cm of snn,minimum width=2.6cm] (nvs) {Flash (NVS)\\+ cópia na ponte};
+  \draw[seta] (pessoa) -- node[above,font=\scriptsize]{texto} (ponte);
+  \draw[seta] ([yshift=2mm]ponte.east) -- node[above,font=\scriptsize]{prompt + sentimentos} ([yshift=2mm]llm.west);
+  \draw[seta] ([yshift=-2mm]llm.west) -- node[below,font=\scriptsize]{resposta} ([yshift=-2mm]ponte.east);
+  \draw[seta] ([xshift=-6mm]ponte.south) -- node[left,font=\scriptsize,align=right]{estímulos\\\cod{/snn?s=..}} ([xshift=-6mm]snn.north);
+  \draw[seta] ([xshift=6mm]snn.north) -- node[right,font=\scriptsize,align=left]{estado\\\cod{e=..&en=..&da=..}} ([xshift=6mm]ponte.south);
+  \draw[seta] (snn) -- node[above,font=\scriptsize]{humor, gesto} (oled);
+  \draw[seta,<->] (snn) -- node[above,font=\scriptsize]{pesos} (nvs);
+\end{tikzpicture}
+\caption{Arquitetura: a SNN roda no robô em paralelo com o LLM no PC.}
+\end{figure}
+
+\subsection{O que é uma SNN e por que usar uma no robô}
+
+Redes neurais “clássicas” (como as que existem dentro do LLM) trocam números contínuos em camadas, uma vez por pergunta. Uma
+\textbf{rede neural de disparos} (\emph{Spiking Neural Network}) imita mais de perto o neurônio biológico:
+
+\begin{itemize}
+  \item cada neurônio tem um \textbf{potencial de membrana} $v(t)$ que evolui no tempo;
+  \item ele soma as correntes que chegam das sinapses e \textbf{vaza} lentamente para o repouso;
+  \item quando $v$ passa do \textbf{limiar}, o neurônio \textbf{dispara} um pulso (\emph{spike}) e volta a zero;
+  \item a informação está no \textbf{momento} e na \textbf{frequência} dos pulsos, não num número fixo.
+\end{itemize}
+
+Para um robô de mesa isso tem vantagens práticas: a rede roda continuamente (o robô “vive” mesmo sem ninguém falar), reage em
+milissegundos, tem memória de curto prazo natural (os potenciais e correntes demoram a decair), e aprende com regras locais
+(STDP) que cabem num microcontrolador — sem retropropagação, sem GPU.
+
+\subsection{Números principais}
+
+\begin{center}
+\begin{tabular}{@{}lr@{\qquad}lr@{}}
+\toprule
+Neurônios & 266 & Passo de simulação & $1\ms$ \\
+Sinapses & \vNSin & Aprendizado (R-STDP) & a cada $10\ms$ \\
+Sinapses plásticas & \vNPl & Decisão de humor/gesto & a cada $20\ms$ \\
+Sinapses fixas & \vNFixa & Normalização + personalidade & a cada $1\,\mathrm{s}$ \\
+RAM da rede (\texttt{.bss}) & $\approx 66\,$KB & CPU no robô (núcleo 1) & $\approx 29\,\%$ \\
+Memória gravada na flash & \vMem\ bytes & Tempo real no robô & $100\,\%$ \\
+Repouso: neurônio oculto & \vTaxaRep\,Hz & Repouso: rede toda & \vDispRep\ disparos/s \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ================================================================== 2
+\section{O modelo de neurônio (LIF)}\label{sec:lif}
+
+O modelo adotado é o \emph{leaky integrate-and-fire} com sinapses de corrente e limiar adaptativo, na formulação de Gerstner e
+Kistler~\cite{gerstner2002}. A análise de equilíbrio e excitabilidade segue Izhikevich~\cite{izhikevich2007}.
+
+\subsection{Equação contínua}
+
+Cada neurônio (exceto os sensoriais) é um \textbf{LIF} — \emph{Leaky Integrate-and-Fire} (integra e dispara, com vazamento). Em unidades
+normalizadas (repouso $=0$, limiar base $=1$):
+\begin{equation}
+\tau_m \frac{dv}{dt} = -v + I(t), \qquad I(t) = g_e(t) - g_i(t) + b + \xi(t)
+\label{eq:lif}
+\end{equation}
+\begin{itemize}
+  \item $\tau_m = 20\ms$ — constante de tempo da membrana (quão rápido ela vaza);
+  \item $g_e$, $g_i$ — correntes sinápticas excitatória e inibitória;
+  \item $b$ — \textbf{viés} (corrente de fundo) da população; deixa cada população perto, mas abaixo, do limiar;
+  \item $\xi$ — ruído (Seção~\ref{sec:ruido}).
+\end{itemize}
+
+As correntes sinápticas decaem exponencialmente e saltam a cada pulso que chega:
+\begin{equation}
+\tau_e \frac{dg_e}{dt} = -g_e + \sum_{j,\,w_j>0} w_j\, \delta(t-t_j), \qquad
+\tau_i \frac{dg_i}{dt} = -g_i + \sum_{j,\,w_j<0} |w_j|\, \delta(t-t_j)
+\end{equation}
+com $\tau_e = 5\ms$ e $\tau_i = 8\ms$ (a inibição dura um pouco mais, o que estabiliza a rede).
+
+\textbf{Disparo:} se $v \ge \theta = 1 + a$, onde $a$ é a adaptação do limiar, o neurônio dispara, $v \leftarrow 0$, entra em
+\textbf{período refratário} (3 passos; 2 para os inibitórios, que são mais rápidos) e o limiar sobe:
+\begin{equation}
+a \leftarrow a + \Delta a, \qquad \Delta a = \begin{cases} 0{,}08 & \text{ocultos excitatórios} \\ 0{,}04 & \text{demais} \end{cases},
+\qquad \tau_a \frac{da}{dt} = -a,\quad \tau_a = 300\ms
+\end{equation}
+A adaptação faz um neurônio que dispara muito ficar “cansado”: a frequência cai sozinha mesmo com o estímulo constante (veja o limiar
+subindo na Figura~\ref{fig:lif}). O potencial também tem um piso: $v \ge -0{,}5$.
+
+\subsection{Discretização (como o código calcula)}
+
+O firmware usa passo fixo $\Delta t = 1\ms$ e método de Euler para $v$; as exponenciais das correntes são aplicadas com o fator exato
+de decaimento $\alpha = e^{-\Delta t/\tau}$, \textbf{pré-calculado} como constante (nada de \cod{expf} no laço):
+\begin{align}
+v_{n+1} &= v_n + \frac{1}{\tau_m}\left(-v_n + g_{e,n} - g_{i,n} + b\right) + \sigma\,\eta_n, \qquad \sigma = 0{,}05 \label{eq:euler}\\
+g_{e,n+1} &= \alpha_e\, g_{e,n} + \textstyle\sum w^{+}, \qquad g_{i,n+1} = \alpha_i\, g_{i,n} + \textstyle\sum |w^{-}|
+\end{align}
+
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Constante no código & Fórmula & Valor & Significado \\
+\midrule
+\cod{AE} & $e^{-1/5}$ & 0,818731 & decaimento de $g_e$ por ms \\
+\cod{AI} & $e^{-1/8}$ & 0,882497 & decaimento de $g_i$ por ms \\
+\cod{AS} & $e^{-1/20}$ & 0,951229 & traços do STDP ($x_\text{pre}$, $y_\text{pos}$) \\
+\cod{AA} & $e^{-1/300}$ & 0,996672 & adaptação do limiar \\
+\cod{AD} & $e^{-1/300}$ & 0,996672 & dopamina \\
+\cod{decai} & $e^{-10/1000}$ & 0,990050 & elegibilidade (aplicada a cada 10 ms) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Viés de cada população}
+
+\begin{center}
+\begin{tabular}{@{}lccl@{}}
+\toprule
+População & $b$ & Equilíbrio sem entrada & Comentário \\
+\midrule
+Ocultos excitatórios & 0,62 & $v^\ast = 0{,}62$ & disparam só com ruído forte ou entrada \\
+Inibitórios & 0,55 & $v^\ast = 0{,}55$ & ligam quando os ocultos se agitam \\
+Emoções & $0{,}50 + 0{,}05\,T_k$ & $\approx 0{,}50$ & $T_k$ = traço de personalidade (Seção~\ref{sec:personalidade}) \\
+Motores & 0,45 & $v^\ast = 0{,}45$ & precisam de entrada clara para gesticular \\
+Dopamina & 0,35 & $v^\ast = 0{,}35$ & só disparam com carinho \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Sem entrada, o equilíbrio da Eq.~\eqref{eq:lif} é $v^\ast = b$. Como todos os $b < 1$, \textbf{nenhum neurônio dispara sozinho
+de forma regular}: é preciso entrada sináptica (ou um pico de ruído) para cruzar o limiar.
+
+\subsection{Ruído triangular}\label{sec:ruido}
+
+O termo $\eta_n$ é gerado por um xorshift32 (determinístico: mesma semente $\Rightarrow$ mesma rede) e é a soma de duas uniformes:
+\begin{equation}
+\eta = 2{,}449\,(U_1 + U_2 - 1), \qquad U_1, U_2 \sim \mathcal{U}(0,1)
+\end{equation}
+A variância de $U_1+U_2-1$ é $2 \cdot \tfrac{1}{12} = \tfrac16$, logo o desvio é $\sqrt{1/6} = 0{,}4082$ e $2{,}449 \times 0{,}4082 = 0{,}99979 \approx 1$.
+A distribuição é \textbf{triangular} em $[-2{,}449,\ +2{,}449]$: parecida com a normal no centro, mas sem caudas infinitas.
+
+\begin{atencao}
+O formato do ruído importa para o aprendizado. Uma versão com ruído \textbf{uniforme} (mesmo desvio) foi testada e \textbf{quebrou
+o aprendizado}: os disparos espontâneos mudaram de padrão, a elegibilidade acumulou correlações espúrias e o teste
+“aprendeu: web sozinha ficou mais alegre” falhou. O código voltou para a soma de duas uniformes, e há um comentário no
+\arq{zeus_snn.c} avisando para não trocar.
+\end{atencao}
+
+\begin{exemplo}[: flutuação do potencial em repouso]
+Com entrada constante $I = b$, a Eq.~\eqref{eq:euler} é um processo AR(1): $v_{n+1} - b = (1 - \tfrac{1}{\tau_m})(v_n - b) + \sigma\eta_n$.
+A variância estacionária é
+\[
+\operatorname{Var}(v) = \frac{\sigma^2}{1-(1-1/\tau_m)^2} = \frac{0{,}05^2}{1-0{,}95^2} = \frac{0{,}0025}{0{,}0975} = 0{,}0256
+\quad\Rightarrow\quad \sigma_v = 0{,}160 .
+\]
+Para um oculto ($b=0{,}62$) o limiar está a $(1-0{,}62)/0{,}160 = 2{,}4$ desvios: o ruído sozinho quase nunca dispara o neurônio,
+mas qualquer entrada pequena somada a uma flutuação positiva sim. Por isso, em repouso, os ocultos ficam em torno de
+\textbf{\vTaxaRep\,Hz} (medido) — vivos, mas calmos.
+\end{exemplo}
+
+\subsection{Efeito de um pulso: o potencial pós-sináptico}
+
+Um pulso com peso $w$ faz $g_e$ saltar para $w$ e decair com $\tau_e$. Resolvendo a Eq.~\eqref{eq:lif} com $g_e(t) = w\,e^{-t/\tau_e}$
+(a partir do repouso), obtém-se o \textbf{PSP} (potencial pós-sináptico):
+\begin{equation}
+\Delta v(t) = w\,\frac{\tau_e}{\tau_m - \tau_e}\left(e^{-t/\tau_m} - e^{-t/\tau_e}\right),
+\qquad t^\ast = \frac{\tau_m\tau_e}{\tau_m-\tau_e}\ln\frac{\tau_m}{\tau_e} = 9{,}24\ms
+\end{equation}
+\begin{equation}
+\Delta v_{\max} = \frac{w}{3}\left(e^{-0{,}462} - e^{-1{,}848}\right) = 0{,}1575\,w, \qquad
+\int_0^\infty \frac{g_e}{\tau_m}\,dt = w\,\frac{\tau_e}{\tau_m} = 0{,}25\,w
+\end{equation}
+
+\begin{exemplo}[: quantos pulsos para disparar um oculto]
+Sinapse sensorial $\to$ oculto preferido: $w \approx 0{,}9$. Pico do PSP: $0{,}1575 \times 0{,}9 = 0{,}142$.
+Partindo do repouso $0{,}62$, faltam $0{,}38$ para o limiar: são necessários
+$\lceil 0{,}38 / 0{,}142 \rceil = 3$ pulsos quase simultâneos (dentro de $\sim 10\ms$), ou 2 pulsos mais uma flutuação de ruído.
+Com o estímulo no máximo, cada sensorial dispara a $113\Hz$ e são 4 por estímulo: chegam $\approx 0{,}45$ pulsos por ms no oculto,
+o que basta para mantê-lo disparando a dezenas de Hz.
+\end{exemplo}
+
+\subsection{Curva frequência $\times$ corrente}
+
+Para corrente constante $I > 1$ (sem ruído e sem adaptação), o tempo para ir de $0$ a $1$ é
+$T = \tau_m \ln\frac{I}{I-1}$, e a frequência fica
+\begin{equation}
+f(I) = \frac{1000}{t_\text{ref} + \tau_m\ln\frac{I}{I-1}}\ \Hz, \qquad t_\text{ref} = 3\ms .
+\end{equation}
+
+\begin{exemplo}[: frequência e adaptação]
+$I = 1{,}5 \Rightarrow T = 20\ln 3 = 21{,}97\ms \Rightarrow f = 1000/24{,}97 = 40\Hz$.
+Com a adaptação, cada disparo soma $0{,}08$ ao limiar, que decai com $\tau_a = 300\ms$. Em regime, o acréscimo médio é
+$\bar a = \Delta a\, f\, \tau_a = 0{,}08 \times 40 \times 0{,}3 = 0{,}96$, ou seja, o limiar vai a $\approx 1{,}96$.
+A sonda mediu o limiar do oculto de carinho subindo até \textbf{1,90} durante o carinho (Figura~\ref{fig:lif}): a teoria bate com a simulação.
+\end{exemplo}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[zeus,width=0.62\linewidth,height=5cm,xlabel={corrente constante $I$},ylabel={frequência (Hz)},
+  xmin=0.9,xmax=4,ymin=0,ymax=160,legend pos=north west]
+  \addplot[cExc,line width=1.2pt,domain=1.002:4,samples=200] {1000/(3+20*ln(x/(x-1)))};
+  \addlegendentry{LIF sem adaptação}
+  \addplot[cInh,dashed,line width=1pt,domain=1.002:4,samples=200] {1000/(2+20*ln(x/(x-1)))};
+  \addlegendentry{inibitório ($t_\text{ref}=2\ms$)}
+  \draw[gray,dashed] (axis cs:1,0) -- (axis cs:1,160) node[pos=0.92,right,font=\scriptsize]{limiar};
+\end{axis}
+\end{tikzpicture}
+\caption{Curva $f(I)$ do neurônio LIF. Abaixo de $I=1$ só o ruído faz disparar.}
+\end{figure}
+
+% ================================================================== 3
+\section{Neurônios sensoriais e os 14 estímulos}\label{sec:sensorial}
+
+\subsection{Codificação Poisson}
+
+Os 56 primeiros neurônios (14 estímulos $\times$ 4) não integram nada: são \textbf{geradores Poisson}. A cada ms, um sensorial do
+estímulo $s$ dispara com probabilidade
+\begin{equation}
+p_s = \left(f_\text{base} + f_\text{max}\cdot \ell_s\right)\cdot 10^{-3}, \qquad f_\text{base} = 3\Hz,\ f_\text{max} = 110\Hz
+\end{equation}
+onde $\ell_s \in [0,1]$ é o nível do estímulo. Isso transforma um número (“o quanto de carinho”) em um \textbf{trem de pulsos} cuja
+frequência carrega a intensidade — o mesmo código de taxa usado por receptores sensoriais biológicos.
+
+\begin{exemplo}
+Sem estímulo: $p = 0{,}003$ por ms (3\,Hz); os 56 sensoriais juntos dão $\approx 168$ disparos/s de “ruído de fundo” sensorial.
+Carinho no máximo ($\ell=1$): $p = 0{,}113$ por ms; os 4 sensoriais de carinho produzem $4 \times 113 = 452$ pulsos/s.
+\end{exemplo}
+
+\subsection{Nível do estímulo: contínuo e pulso}
+
+Cada estímulo tem duas fontes, e vale a maior:
+\begin{equation}
+\ell_s = \max\left(c_s,\ P_s\right), \qquad P_s \leftarrow P_s\left(1 - \frac{1}{\tau_s}\right)\ \text{a cada ms} \;\approx\; P_s(0)\,e^{-t/\tau_s}
+\end{equation}
+\begin{itemize}
+  \item \textbf{contínuo} $c_s$ (\cod{snn_sensor}): segue um valor do ambiente (silêncio, sono, LLM pensando…);
+  \item \textbf{pulso} $P_s$ (\cod{snn_pulso}): um evento (voz, carinho, bronca) soma ao pulso, limitado a 1, e ele decai sozinho com $\tau_s$.
+\end{itemize}
+
+\begin{center}
+\small
+\begin{tabular}{@{}rlrl@{}}
+\toprule
+$s$ & Estímulo & $\tau_s$ (ms) & De onde vem \\
+\midrule
+0 & SOM & 2\,000 & qualquer fala (\cod{som} 100 pela ponte); também soma CONVERSA 0,15 \\
+1 & FALA & 1\,000 & contínuo $=1$ enquanto o robô fala (\cod{face_falando}) \\
+2 & CONVERSA & 60\,000 & texto/humor no rosto: pulso 0,25 (dura 1 min) \\
+3 & NOVIDADE & 3\,000 & pergunta (“?”: 0,4) ou primeiro evento após 2 min parado (0,8) \\
+4 & TRABALHO & 2\,000 & LLM pensando: contínuo 1 (\cod{trabalho c=100} … \cod{c=0}) \\
+5 & JOGO & 20\,000 & tabuleiro de xadrez: 0,6; função de xadrez: 0,8 \\
+6 & WEB & 8\,000 & funções de pesquisa/abrir/Instagram/WhatsApp: 1,0 \\
+7 & SILÊNCIO & 1\,000 & $1 - e^{-t_\text{parado}/40\,\mathrm{s}}$ \\
+8 & FADIGA & 1\,000 & temperatura: $(T - 40\,^\circ\mathrm{C})/20$, limitado a $[0,1]$ \\
+9 & TÉDIO & 1\,000 & $(t_\text{parado} - 90\,\mathrm{s})/240\,\mathrm{s}$, limitado \\
+10 & SONO & 1\,000 & $(t_\text{parado} - 45\,\mathrm{s})/75\,\mathrm{s}$, limitado \\
+11 & CUTUCÃO & 1\,500 & tecla do robô: pulso 1,0 \\
+12 & CARINHO & 2\,500 & elogio na fala (100) ou tecla SW2 para cima \\
+13 & BRONCA & 3\,000 & xingamento/palavrão na fala (100) ou tecla SW2 para baixo \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Os níveis contínuos que chegam pela ponte (\cod{/snn?s=nome&c=0..100}) valem por no máximo 30\,s sem renovação
+(\cod{EXT_MS}), para que um comando perdido não deixe o robô “pensando” para sempre.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[zeus,width=0.8\linewidth,height=5cm,xlabel={tempo sem interação (s)},ylabel={nível},xmin=0,xmax=400,ymin=0,ymax=1.05,
+  legend pos=south east]
+  \addplot[eTri,line width=1.2pt,domain=0:400,samples=120] {1-exp(-x/40)}; \addlegendentry{SILÊNCIO}
+  \addplot[eSon,line width=1.2pt,domain=0:400,samples=200] {min(max((x-45)/75,0),1)}; \addlegendentry{SONO}
+  \addplot[eRai,line width=1.2pt,domain=0:400,samples=200] {min(max((x-90)/240,0),1)}; \addlegendentry{TÉDIO}
+\end{axis}
+\end{tikzpicture}
+\caption{Estímulos internos calculados por \cod{cerebro_passo} a partir do tempo parado.}
+\end{figure}
+
+\begin{exemplo}[: o robô fica sozinho]
+Após 60\,s sem ninguém: SILÊNCIO $= 1 - e^{-1{,}5} = 0{,}78$, SONO $= (60-45)/75 = 0{,}20$, TÉDIO $= 0$.
+Após 3\,min: SILÊNCIO $= 0{,}99$, SONO $= 1$, TÉDIO $= (180-90)/240 = 0{,}375$. A população SONO domina, o humor vira
+\emph{com sono} e a saída motora COCHILA dispara (o rosto cochila). Na primeira fala depois de mais de 2\,min, um pulso de
+NOVIDADE 0,8 “acorda” a rede (surpresa/curiosidade).
+\end{exemplo}
+
+% ================================================================== 4
+\section{Arquitetura da rede}\label{sec:arq}
+
+\subsection{Populações}
+
+O índice do neurônio define a população (faixas contíguas, o que simplifica o código e a visualização):
+
+\begin{center}
+\begin{tabular}{@{}llrrl@{}}
+\toprule
+População & Índices & Qtde. & Tipo & Função \\
+\midrule
+\textcolor{cSen}{\textbf{Sensorial}} & 0–55 & 56 & Poisson & 14 estímulos $\times$ 4 \\
+\textcolor{cExc}{\textbf{Oculto excitatório}} & 56–183 & 128 & LIF & representação interna; cada um “prefere” um estímulo \\
+\textcolor{cInh}{\textbf{Inibitório}} & 184–215 & 32 & LIF & controle de ganho (evita explosão de atividade) \\
+\textcolor{cEmo}{\textbf{Emoção}} & 216–243 & 28 & LIF & 7 emoções $\times$ 4 \\
+\textcolor{cMot}{\textbf{Motor}} & 244–261 & 18 & LIF & 6 gestos $\times$ 3 \\
+\textcolor{cDa}{\textbf{Dopamina}} & 262–265 & 4 & LIF & recompensa (neuromodulador) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Emoções} ($k$): 0 ALEGRIA, 1 TRISTEZA, 2 RAIVA, 3 SONO, 4 CURIOSIDADE, 5 SURPRESA, 6 FOCO. A emoção $k$ corresponde ao humor
+$k+1$ do rosto (feliz, triste, bravo, com sono, curioso, surpreso, pensativo); humor 0 = neutro.\\
+\textbf{Gestos}: SUSTO, OBSERVA, VAGA (olhar em volta), COMEMORA, ACALMA, COCHILA.\\
+\textbf{Preferência dos ocultos}: o oculto $i$ prefere o estímulo $(i - 56) \bmod 14$. Como $128 = 14 \times 9 + 2$, os estímulos 0 e 1
+têm 10 ocultos e os demais 9.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[font=\small,
+  pop/.style={draw=#1,fill=#1!12,rounded corners=4pt,line width=0.9pt,minimum width=2.5cm,minimum height=1.1cm,align=center},
+  exc/.style={-{Stealth[length=2.4mm]},line width=0.8pt,cExc!80!black},
+  inh/.style={-{Circle[length=1.6mm]},line width=0.8pt,cInh},
+  pla/.style={-{Stealth[length=2.4mm]},line width=1.6pt,ok},
+  mod/.style={-{Stealth[length=2.2mm]},dashed,line width=0.8pt,cDa}]
+  \node[pop=cSen] (sen) at (0,0) {Sensorial\\56 (Poisson)};
+  \node[pop=cExc] (exc) at (4.2,0) {Ocultos exc.\\128};
+  \node[pop=cInh] (inh) at (4.2,-2.6) {Inibitórios\\32};
+  \node[pop=cEmo] (emo) at (8.6,1.3) {Emoções\\7 $\times$ 4};
+  \node[pop=cMot] (mot) at (8.6,-1.3) {Motores\\6 $\times$ 3};
+  \node[pop=cDa] (da) at (0,-2.6) {Dopamina\\4};
+  \node[draw=cDa,fill=cDa!5,rounded corners,align=center,font=\scriptsize] (stdp) at (8.6,-3.4) {R-STDP: $\Delta w = \eta\,D\,e$};
+  \draw[exc] (sen) -- node[above,font=\scriptsize]{816} (exc);
+  \draw[exc] (exc) to[out=120,in=60,looseness=4] node[above,font=\scriptsize]{1193 (assembleias)} (exc);
+  \draw[exc] ([xshift=-3mm]exc.south) -- node[left,font=\scriptsize]{1449} ([xshift=-3mm]inh.north);
+  \draw[inh] ([xshift=3mm]inh.north) -- node[right,font=\scriptsize]{1474} ([xshift=3mm]exc.south);
+  \draw[inh] (inh) to[out=-30,in=-90,looseness=4] node[below,font=\scriptsize]{170} (inh);
+  \draw[pla] (exc) -- node[above,sloped,font=\scriptsize]{917 plásticas} (emo);
+  \draw[pla] (exc) -- node[below,sloped,font=\scriptsize]{604 plásticas} (mot);
+  \draw[exc] (emo) -- node[right,font=\scriptsize]{92} (mot);
+  \draw[inh] (emo) to[out=30,in=-30,looseness=4] node[right,font=\scriptsize,align=left]{418\\WTA} (emo);
+  \draw[inh] (mot) to[out=30,in=-30,looseness=4] node[right,font=\scriptsize,align=left]{204\\WTA} (mot);
+  \draw[exc] (sen) -- node[left,font=\scriptsize,align=right]{16 (só\\carinho)} (da);
+  \draw[inh] (sen.north) -- ++(0,2.4) -| node[above,font=\scriptsize,pos=0.25]{48 inibitórias diretas (bronca$\to$alegria, carinho$\to$raiva/tristeza)} (emo.north);
+  \draw[mod] (da.south) to[out=-30,in=180] (stdp.west);
+\end{tikzpicture}
+\caption{Conectividade (números = sinapses na rede real com semente \texttt{0x2E05}). Setas verdes grossas: sinapses que aprendem.
+Ponta redonda: inibição. WTA: “o vencedor leva tudo”.}
+\end{figure}
+
+\subsection{Regras de ligação}
+
+A rede é montada por \cod{montar()} de forma pseudoaleatória mas determinística (mesma semente = mesma rede no robô, no simulador e
+nos testes). Para cada neurônio de origem:
+
+\begin{description}[style=nextline,leftmargin=1.2em]
+  \item[Sensorial $\to$ oculto] peso $0{,}9 + 0{,}1\eta$ para todos os ocultos que preferem aquele estímulo; com probabilidade $6/128$,
+        peso fraco $0{,}25\,U$ para outros (mistura entre estímulos).
+  \item[Sensorial CARINHO $\to$ dopamina] peso 0,6 para os 4 neurônios de dopamina (o carinho é a recompensa).
+  \item[Caminhos inibitórios diretos] BRONCA $\to$ ALEGRIA: $-0{,}9$ (a bronca corta a alegria na hora);
+        CARINHO $\to$ RAIVA e TRISTEZA: $-0{,}7$ (o carinho acalma).
+  \item[Oculto $\to$ emoção / motor (\textbf{plásticas})] para cada população-alvo $k$, com $a$ = afinidade inata (tabelas abaixo):
+        a sinapse existe com probabilidade 0,6 se $a>0$, ou 0,1 se $a = 0$, e nasce com
+        \begin{equation} w_0 = \operatorname{clamp}\left(0{,}05 + 1{,}5\,a + 0{,}05\,\eta,\ 0{,}02,\ 1{,}6\right). \end{equation}
+        As ligações com $a=0$ nascem quase nulas ($\approx 0{,}05$), mas existem: é por elas que a rede pode \textbf{aprender associações novas}.
+  \item[Oculto $\to$ oculto] mesmo estímulo: prob.\ 0,3, peso 0,35 (assembleias que se sustentam); outro estímulo: prob.\ 0,06,
+        peso $0{,}04 + 0{,}12\,U$.
+  \item[Oculto $\to$ inibitório] prob.\ 0,35, peso 0,3.
+  \item[Inibitório $\to$ oculto / inibitório] prob.\ 0,35, peso $-0{,}6$ / prob.\ 0,15, peso $-0{,}4$.
+  \item[Emoção $\to$ emoção] mesma emoção: $+0{,}3$ (os 4 neurônios se ajudam); outra: prob.\ 0,5, $-0{,}5$ (competição, só uma vence).
+  \item[Emoção $\to$ motor] peso $0{,}5\,a$ com prob.\ 0,7, onde $a$ vem da tabela emoção$\to$gesto.
+  \item[Motor $\to$ motor] mesmo gesto $+0{,}3$; outro: prob.\ 0,6, $-0{,}6$ (um gesto por vez).
+\end{description}
+
+\subsection{Matriz de conectividade medida}
+
+Contagem de sinapses por par de populações (linha = origem, coluna = destino); entre parênteses o peso médio; $^\ast$ = plásticas.
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+de $\backslash$ para & Sensorial & Oculto exc. & Inibitório & Emoção & Motor & Dopamina \\
+\midrule
+\csname @@input\endcsname dados/conexoes.tex
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{A rede como grafo (Teoria dos Grafos)}\label{sec:grafo}
+
+\paragraph{Definição.} A SNN é um \textbf{grafo dirigido ponderado} $G=(V,E,w)$, com:
+\begin{itemize}
+  \item $V=\{0,\dots,265\}$: os neurônios, com $n=|V|=266$;
+  \item $E\subseteq V\times V$: as sinapses, em que $(j,i)\in E$ significa que $j$ (pré) envia pulsos para $i$ (pós);
+  \item $w:E\to\mathbb{R}$: a função de ponderação, com $w>0$ para sinapses excitatórias e $w<0$ para inibitórias.
+\end{itemize}
+Os valores medidos na rede real valem para a semente \texttt{0x2E05} e vêm da \arq{sonda.c}:
+
+\begin{center}
+\begin{tabular}{@{}lr@{\qquad}lr@{}}
+\toprule
+Vértices $|V|$ & 266 & Arestas $|E|$ & \gArestas \\
+Arestas excitatórias $|E^{+}|$ & \gExc & Arestas inibitórias $|E^{-}|$ & \gInh \\
+Densidade $\rho=|E|/\,n(n-1)$ & \gDens & Grau médio $\bar k=|E|/n$ & \gGrau \\
+Maior grau de saída $k^\text{out}_{\max}$ & \gKoutMax & Maior grau de entrada $k^\text{in}_{\max}$ & \gKinMax \\
+Vértices-fonte ($k^\text{in}=0$) & \gKinZero & Laços $(i,i)$ & \gLacos \\
+Reciprocidade (arestas com volta) & \gRecip\,\% & Componentes fortemente conexas & \gComp \\
+Maior componente forte & \gMaiorComp\ vértices & Diâmetro da maior componente & \gDiam \\
+Distância média sensorial$\to$emoção & \gDistEmo & Distância média sensorial$\to$motor & \gDistMot \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+O grafo é \textbf{simples}: não tem laços nem arestas múltiplas, então cada sinapse é exatamente uma aresta. Ele também é
+\textbf{esparso}: só $\approx 10{,}5\,\%$ dos pares possíveis estão ligados. Os \gKinZero\ vértices-fonte são exatamente os
+neurônios sensoriais. Eles não recebem sinapses porque são dirigidos pelos estímulos externos, e não pela rede.
+
+\paragraph{Matriz de adjacência e dinâmica.} Seja $W\in\mathbb{R}^{n\times n}$ com $W_{ji}=w(j,i)$ se $(j,i)\in E$ e $0$ caso
+contrário. Seja $s(t)\in\{0,1\}^n$ o vetor de disparos no milissegundo $t$, isto é, a linha do \emph{raster}. A entrada sináptica
+recebida por todos os neurônios é o produto matriz-vetor
+\begin{equation}
+\Delta I(t) = W^{\mathsf T} s(t), \qquad \Delta I_i(t)=\sum_{j\in N^{-}(i)} w(j,i)\,s_j(t),
+\end{equation}
+em que $N^{-}(i)$ é a vizinhança de entrada de $i$. Como $s(t)$ é muito esparso (em repouso, poucos neurônios disparam por ms), o
+código não multiplica a matriz densa de $266^2=70\,756$ posições. Para cada $j$ que disparou, ele percorre a sua \textbf{lista de
+adjacência} $N^{+}(j)$. O custo por ms é $\sum_{j:\,s_j=1} k^\text{out}_j$, proporcional à atividade e não ao tamanho da rede.
+
+\paragraph{Listas de adjacência: CSR e grafo transposto.} O formato CSR (Subseção~\ref{sec:csr}) é a lista de adjacência de $G$ em
+memória contígua:
+\begin{itemize}
+  \item \cod{s_off} é o vetor de deslocamentos;
+  \item \cod{s_pos} guarda os vizinhos de saída;
+  \item \cod{s_w} guarda os pesos das arestas.
+\end{itemize}
+O STDP precisa, no disparo do pós $i$, das arestas que \emph{chegam} em $i$. Por isso o firmware também mantém uma lista do
+\textbf{grafo transposto} $G^{\mathsf T}$ (\cod{s_rin_off}), restrita às \vNPl\ arestas plásticas. São duas visões da mesma matriz:
+$W$ por linhas e $W^{\mathsf T}$ por linhas.
+
+\paragraph{Componentes fortemente conexas e condensação.} Dois vértices estão na mesma componente fortemente conexa (SCC) quando
+cada um alcança o outro por um caminho dirigido. Neste grafo, as componentes foram calculadas com o algoritmo de
+\textbf{Kosaraju}: duas buscas em profundidade, uma em $G$ e outra em $G^{\mathsf T}$, com custo $O(|V|+|E|)$. Das \gComp\
+componentes, só três são não triviais:
+\begin{itemize}
+  \item o \textbf{núcleo recorrente}, com \gMaiorComp\ vértices (os 128 ocultos e os 32 inibitórios), onde a atividade reverbera
+        e a memória de curto prazo se mantém;
+  \item as \textbf{emoções}, com 28 vértices ligados pelo circuito de competição WTA;
+  \item os \textbf{motores}, com 18 vértices.
+\end{itemize}
+Os 56 sensoriais e os 4 de dopamina são componentes de um único vértice. Contraindo cada SCC num vértice, obtém-se o
+\textbf{grafo de condensação}, que é sempre acíclico (DAG). A sua ordenação topológica revela a hierarquia funcional da rede:
+
+\begin{center}
+\begin{tikzpicture}[font=\small,
+  scc/.style={draw=#1,fill=#1!12,rounded corners=4pt,line width=0.9pt,minimum height=1cm,align=center},
+  seta/.style={-{Stealth[length=2.4mm]},line width=0.8pt,gray!70!black}]
+  \node[scc=cSen,minimum width=2.3cm] (s) {56 fontes\\(sensoriais)};
+  \node[scc=cExc,right=1.1cm of s,minimum width=2.6cm] (n) {SCC núcleo\\\gMaiorComp\ vértices};
+  \node[scc=cEmo,right=1.1cm of n,minimum width=2.3cm] (e) {SCC emoções\\28 vértices};
+  \node[scc=cMot,right=1.1cm of e,minimum width=2.3cm] (m) {SCC motores\\18 vértices};
+  \node[scc=cDa,below=0.8cm of s,minimum width=2.3cm] (d) {4 vértices\\(dopamina)};
+  \draw[seta] (s) -- (n);
+  \draw[seta] (n) -- (e);
+  \draw[seta] (e) -- (m);
+  \draw[seta] (n.north) to[out=25,in=155] (m.north);
+  \draw[seta] (s.north) to[out=30,in=150] (e.north);
+  \draw[seta] (s) -- (d);
+\end{tikzpicture}
+\end{center}
+
+O fluxo de pulsos tem, portanto, um sentido único: estímulo $\to$ representação $\to$ emoção $\to$ gesto. As realimentações
+existem somente \emph{dentro} de cada SCC. Isso garante que um gesto não realimenta a percepção pela própria rede, o que evita
+oscilações entre camadas. Os neurônios de dopamina não têm arestas de saída (são sumidouros do grafo). Eles agem sobre o
+aprendizado como sinal global, isto é, como um fator que multiplica o $\Delta w$ de todas as arestas plásticas, e não por
+arestas.
+
+\paragraph{Distâncias mínimas.} Por busca em largura (BFS) a partir de cada neurônio sensorial, a distância média até a camada de
+emoção é \gDistEmo\ arestas e até a camada motora é \gDistMot. Como cada aresta acrescenta alguns milissegundos de integração na
+membrana, essas distâncias explicam a latência curta entre estímulo e reação, de dezenas de milissegundos.
+
+\paragraph{Modelo de construção: grafo estocástico por blocos.} A função \cod{montar()} cria cada aresta com uma probabilidade
+$p_{ab}$ que depende só das populações $a$ (origem) e $b$ (destino). Isso é um \textbf{modelo estocástico por blocos} (SBM), a
+generalização do grafo aleatório de Erdős–Rényi $G(n,p)$. A matriz de conectividade da subseção anterior é o
+\textbf{grafo-quociente} de $G$ pela partição em populações. Para um bloco com $N_a\cdot N_b$ pares possíveis, o número de arestas
+segue uma distribuição binomial:
+\begin{equation}
+|E_{ab}|\sim \mathrm{Bin}(N_aN_b,\ p_{ab}),\qquad \mathbb{E}|E_{ab}|=N_aN_b\,p_{ab},\qquad \sigma=\sqrt{N_aN_b\,p_{ab}(1-p_{ab})}.
+\end{equation}
+
+\begin{exemplo}[: valor esperado de arestas por bloco]
+\textbf{Oculto $\to$ inibitório:} $128\times32\times0{,}35 = 1433{,}6$ arestas esperadas, com
+$\sigma=\sqrt{1433{,}6\times0{,}65}=30{,}5$. A rede real tem 1449, a $0{,}5\,\sigma$ da média.\\
+\textbf{Oculto $\to$ oculto} (sem laços), em duas partes:
+\begin{itemize}
+  \item mesmo estímulo: há 2 grupos de 10 e 12 grupos de 9 ocultos, ou seja,
+        $2\cdot10\cdot9+12\cdot9\cdot8=1044$ pares, que com $p=0{,}3$ dão $313{,}2$ arestas;
+  \item estímulos diferentes: $128\cdot127-1044=15\,212$ pares, que com $p=0{,}06$ dão $912{,}7$ arestas.
+\end{itemize}
+O total esperado é $1225{,}9$; o medido é 1193, a cerca de $1\,\sigma$.
+\end{exemplo}
+
+\paragraph{Comunidades (assembleias).} Dentro de cada grupo de ocultos que prefere o mesmo estímulo, a densidade é $0{,}30$. Entre
+grupos diferentes, ela é $0{,}06$, cinco vezes menor. São 14 \textbf{comunidades} densas, com alta modularidade. Cada uma
+funciona como uma assembleia neural que se autossustenta por alguns milissegundos depois do estímulo. A camada de emoção, por sua
+vez, é quase um \textbf{digrafo multipartido completo de arestas negativas}: cada grupo de 4 inibe os demais grupos com
+probabilidade 0,5. Essa é a estrutura em grafo do mecanismo “o vencedor leva tudo” (WTA).
+
+\subsection{A “natureza” do Zeus: afinidades inatas}
+
+Estas tabelas (\cod{INATO_EMO}, \cod{INATO_MOT}, \cod{EMO_MOT}) definem como o robô reage \textbf{ao nascer}. O aprendizado depois
+modifica os pesos plásticos a partir delas.
+
+\begin{center}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l|ccccccc|cccccc@{}}
+\toprule
+& \multicolumn{7}{c|}{\textbf{Estímulo $\to$ emoção} (\cod{INATO_EMO})} & \multicolumn{6}{c}{\textbf{Estímulo $\to$ gesto} (\cod{INATO_MOT})} \\
+Estímulo & Ale & Tri & Rai & Son & Cur & Sur & Foc & Sus & Obs & Vag & Com & Aca & Coc \\
+\midrule
+SOM      & .2 & . & . & . & .5 & .3 & .   & . & .8 & . & . & . & . \\
+FALA     & .6 & . & . & . & .1 & . & .    & . & .6 & . & .2 & . & . \\
+CONVERSA & .7 & . & . & . & .3 & . & .    & . & .6 & . & .3 & . & . \\
+NOVIDADE & . & . & . & . & .6 & .7 & .    & .5 & .5 & .3 & . & . & . \\
+TRABALHO & . & . & . & . & .1 & . & .9    & . & .3 & .3 & . & . & . \\
+JOGO     & .3 & . & . & . & .2 & . & .7   & . & .6 & . & .2 & . & . \\
+WEB      & . & . & . & . & .7 & . & .4    & . & .2 & .6 & . & . & . \\
+SILÊNCIO & . & .3 & . & .3 & . & . & .    & . & . & .5 & . & .4 & . \\
+FADIGA   & . & .3 & .2 & .6 & . & . & .   & . & . & . & . & .5 & .5 \\
+TÉDIO    & . & .6 & .2 & .3 & . & . & .   & . & . & .8 & . & . & .2 \\
+SONO     & . & . & . & 1 & . & . & .      & . & . & . & . & .3 & 1 \\
+CUTUCÃO  & . & . & .3 & . & .2 & .8 & .   & .9 & .3 & . & . & . & . \\
+CARINHO  & 1 & . & . & . & . & . & .      & . & . & . & 1 & .3 & . \\
+BRONCA   & . & .5 & .8 & . & . & . & .    & .6 & . & . & . & . & . \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.6em}
+\begin{tabular}{@{}l|cccccc@{}}
+\toprule
+Emoção $\to$ gesto (\cod{EMO_MOT}) & Susto & Observa & Vaga & Comemora & Acalma & Cochila \\
+\midrule
+Alegria & . & .2 & . & .8 & . & . \\
+Tristeza & . & . & .2 & . & .5 & . \\
+Raiva & .2 & .5 & . & . & . & . \\
+Sono & . & . & . & . & . & 1 \\
+Curiosidade & . & .3 & .9 & . & . & . \\
+Surpresa & .9 & . & . & . & . & . \\
+Foco & . & . & .3 & . & . & . \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{exemplo}[: peso de nascença]
+Oculto que prefere CARINHO $\to$ neurônio de ALEGRIA: $a = 1{,}0 \Rightarrow w_0 = 0{,}05 + 1{,}5 = 1{,}55$ ($\pm 0{,}05$), existe em 60\,\% dos pares.
+Oculto que prefere WEB $\to$ ALEGRIA: $a = 0 \Rightarrow w_0 \approx 0{,}05$, existe em só 10\,\% dos pares. Na rede real são
+\vGrupoF\ sinapses desse tipo, com peso médio \vWfAntes\ — quase desligadas. Já WEB $\to$ CURIOSIDADE ($a = 0{,}7$): \vGrupoC\ sinapses
+com média \vWcAntes. A Seção~\ref{sec:experimento} mostra o grupo WEB$\to$ALEGRIA sendo \textbf{aprendido}.
+\end{exemplo}
+
+\subsection{Armazenamento das sinapses (CSR)}\label{sec:csr}
+
+As sinapses ficam em formato \textbf{CSR} (\emph{compressed sparse row}) por neurônio de origem:
+\begin{itemize}
+  \item \cod{s_off[j]} … \cod{s_off[j+1]-1}: faixa das sinapses que saem de $j$;
+  \item \cod{s_pos[k]} (destino, 16 bits) e \cod{s_w[k]} (peso, 16 bits);
+  \item dentro de cada faixa, as \cod{s_npl[j]} primeiras são as plásticas (por isso \cod{liga_plastica} é chamada antes das fixas);
+  \item para o STDP no disparo do \emph{pós}, há uma segunda lista por destino: \cod{s_rin_off[i]} … com os índices das plásticas que chegam em $i$.
+\end{itemize}
+Entregar os pulsos de um neurônio que disparou custa exatamente o número de sinapses dele (em média $7401/266 \approx 28$), sem
+percorrer a matriz inteira.
+
+\textbf{Peso em 16 bits:} $w = \texttt{s\_w}/8192$ (faixa $\pm 4$, resolução $1{,}22\times10^{-4}$). Isso usa metade da RAM de \texttt{float}
+(economia de $\approx 18$\,KB, decisiva para sobrar heap para o TLS/WiFi). Para não perder mudanças menores que um passo, a
+gravação usa \textbf{arredondamento estocástico}:
+\begin{equation}
+q(w) = \lfloor 8192\,w \rfloor + \mathbb{1}\left[\,U < 8192\,w - \lfloor 8192\,w\rfloor\,\right], \qquad \mathbb{E}[q(w)] = 8192\,w
+\end{equation}
+
+\begin{exemplo}[: arredondamento estocástico]
+Uma atualização de $\Delta w = 2\times10^{-5}$ vale $0{,}164$ passo. Com arredondamento comum ela seria \textbf{sempre} perdida
+(arredonda para 0). Com o estocástico, em 16,4\,\% das vezes o peso sobe 1 passo: na média, o aprendizado fino acontece.
+\end{exemplo}
+
+% ================================================================== 5
+\section{A dinâmica a cada milissegundo}\label{sec:dinamica}
+
+\subsection{Algoritmo de um passo (\cod{passo()})}
+
+\begin{enumerate}
+  \item \textbf{Entrega} os pulsos do ms anterior: para cada neurônio $j$ que disparou e cada sinapse $k$ dele,
+        $g_e[\text{pos}] \mathrel{+}= w_k$ se $w_k\ge0$, senão $g_i[\text{pos}] \mathrel{+}= |w_k|$.
+  \item \textbf{Estímulos}: decai os pulsos ($P_s \leftarrow P_s(1-1/\tau_s)$) e calcula $\ell_s = \max(c_s, P_s)$.
+  \item \textbf{Neurônios}, para $i = 0 \dots 265$:
+    \begin{itemize}
+      \item sensorial: dispara com probabilidade $p_s$;
+      \item em refratário: conta para baixo, $v = 0$;
+      \item LIF: $I = g_e - g_i + b_i$ (+1 se for da emoção que o professor está ensinando); atualiza $v$ (Eq.~\ref{eq:euler});
+            se $v \ge 1 + a_i$: dispara.
+      \item decai $g_e, g_i, a, x_\text{pre}, y_\text{pos}$ pelos fatores $\alpha$;
+      \item se disparou: guarda no raster, conta por população e faz o \textbf{STDP} (Seção~\ref{sec:stdp}).
+    \end{itemize}
+  \item \textbf{Dopamina}: $D \leftarrow D\,\alpha_D + 0{,}02\,n_\text{DA} - 0{,}0015\,\ell_\text{BRONCA}$, limitada a $[-0{,}6,\ 1]$.
+  \item \textbf{Leituras}: taxa de cada população de emoção e de motor, suavizada (Seção~\ref{sec:leituras}).
+\end{enumerate}
+E em \cod{snn_passos(n)}: a cada 10 passos \cod{aprender()}, a cada 20 \cod{decidir()}, a cada 1000 \cod{por_segundo()}.
+
+\begin{figure}[p]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=1 by 4,vertical sep=0.45cm,xlabels at=edge bottom,xticklabels at=edge bottom},
+  zeus,height=3.5cm,xmin=0,xmax=1600,xlabel={tempo (ms)}]
+  % (a) sensorial
+  \nextgroupplot[ymin=-0.1,ymax=1.3,ylabel={$v$ sensorial},ytick={0,1}]
+    \fill[eAle!15] (axis cs:300,-0.1) rectangle (axis cs:1100,1.3);
+    \node[font=\scriptsize,anchor=north,text=eAle!60!black] at (axis cs:700,1.28) {CARINHO $\ell=1$};
+    \addplot[cSen,line width=0.4pt,mark=none] table[x=t,y=vs]{\tabLif};
+  % (b) oculto
+  \nextgroupplot[ymin=-0.55,ymax=2.3,ylabel={oculto \#68}]
+    \fill[eAle!15] (axis cs:300,-0.55) rectangle (axis cs:1100,2.3);
+    \addplot[cExc,line width=0.5pt] table[x=t,y=vh]{\tabLif};
+    \addplot[cInh,line width=0.9pt,dashed] table[x=t,y=lh]{\tabLif};
+    \addplot[cExc,only marks,mark=|,mark size=3pt,restrict expr to domain={\thisrow{sh}}{0.5:1.5}] table[x=t,y expr=2.05]{\tabLif};
+    \legend{$v$,limiar $1+a$,disparo}
+  % (c) emocao
+  \nextgroupplot[ymin=-0.55,ymax=2.3,ylabel={ALEGRIA \#216}]
+    \fill[eAle!15] (axis cs:300,-0.55) rectangle (axis cs:1100,2.3);
+    \addplot[cEmo,line width=0.5pt] table[x=t,y=ve]{\tabLif};
+    \addplot[cInh,line width=0.9pt,dashed] table[x=t,y=le]{\tabLif};
+    \addplot[cEmo,only marks,mark=|,mark size=3pt,restrict expr to domain={\thisrow{se}}{0.5:1.5}] table[x=t,y expr=2.05]{\tabLif};
+  % (d) leituras
+  \nextgroupplot[ymin=-0.05,ymax=1.08,ylabel={leitura}]
+    \fill[eAle!15] (axis cs:300,-0.05) rectangle (axis cs:1100,1.08);
+    \addplot[eAle,line width=1.2pt] table[x=t,y=alegria]{\tabLif};
+    \addplot[cDa,line width=1.2pt] table[x=t,y=da]{\tabLif};
+    \legend{alegria (0..1),dopamina $D$}
+\end{groupplot}
+\end{tikzpicture}
+\caption{Simulação real (sonda): carinho entre 300 e 1100\,ms. (a) Um sensorial de carinho passa a disparar a $\sim113\Hz$.
+(b) Um oculto que prefere carinho integra os pulsos e dispara; o limiar sobe com a adaptação (até 1,90) e a frequência cai.
+(c) Um neurônio de ALEGRIA dispara junto. (d) A leitura de alegria sobe com constante de 400\,ms e a dopamina sobe (os neurônios
+de dopamina recebem o carinho); ao fim do estímulo, tudo decai.}
+\label{fig:lif}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\begin{tikzpicture}
+\begin{axis}[zeus,height=10.5cm,xmin=0,xmax=1600,ymin=0,ymax=266,xlabel={tempo (ms)},ylabel={neurônio},
+  ytick={0,56,184,216,244},yticklabel style={font=\tiny},y dir=reverse,grid=none,
+  extra y ticks={28,120,200,230,253,264},extra y tick labels={Sensorial,Ocultos,Inib.,Emoções,Motor,DA},
+  extra y tick style={tick style={draw=none},yticklabel style={font=\scriptsize\bfseries,xshift=-3pt}}]
+  \fill[eAle!12] (axis cs:300,0) rectangle (axis cs:1100,266);
+  \pgfplotsinvokeforeach{56,184,216,244,262}{\draw[gray!40] (axis cs:0,#1) -- (axis cs:1600,#1);}
+  \addplot[only marks,mark=*,mark size=0.35pt,cSen,restrict y to domain=0:55] table[x=t,y=i]{\tabRaster};
+  \addplot[only marks,mark=*,mark size=0.35pt,cExc,restrict y to domain=56:183] table[x=t,y=i]{\tabRaster};
+  \addplot[only marks,mark=*,mark size=0.35pt,cInh,restrict y to domain=184:215] table[x=t,y=i]{\tabRaster};
+  \addplot[only marks,mark=*,mark size=0.5pt,cEmo,restrict y to domain=216:243] table[x=t,y=i]{\tabRaster};
+  \addplot[only marks,mark=*,mark size=0.5pt,cMot,restrict y to domain=244:261] table[x=t,y=i]{\tabRaster};
+  \addplot[only marks,mark=*,mark size=0.6pt,cDa,restrict y to domain=262:265] table[x=t,y=i]{\tabRaster};
+\end{axis}
+\end{tikzpicture}
+\caption{Raster (cada ponto é um disparo) da rede inteira no mesmo experimento. Com o carinho, acendem: os sensoriais 48–51,
+os ocultos que preferem carinho (linha periódica a cada 14 índices), os inibitórios (controle de ganho), a população ALEGRIA
+(216–219), o gesto COMEMORA e os 4 neurônios de dopamina (embaixo). É esta imagem que o simulador mostra ao vivo.}
+\end{figure}
+
+\subsection{Custo computacional}
+
+Por milissegundo: 266 atualizações de neurônio + (disparos $\times$ $\approx$28 sinapses). Com 600–1900 disparos/s, são
+$\approx$17–53 entregas sinápticas por ms. A cada 10\,ms o aprendizado percorre as \vNPl\ plásticas (com atalho: se $|D| < 0{,}01$,
+só decai a elegibilidade). No ESP32-S3 a 240\,MHz, compilando \arq{zeus_snn.c} com \texttt{-O2} (o resto do firmware fica em \texttt{-Og}),
+isso dá $\approx 29\,\%$ de um núcleo, com 100\,\% de tempo real. No PC o banco de testes roda a $\approx 160\times$ o tempo real.
+
+% ================================================================== 6
+\section{Leituras: emoções, humor, gestos e energia}\label{sec:leituras}
+
+\subsection{Taxa das populações}
+
+A cada ms, conta-se quantos neurônios de cada população dispararam ($n_k$). A taxa instantânea em Hz por neurônio é $n_k \cdot 1000/N_k$
+($N_k = 4$ para emoção, 3 para motor), suavizada por média móvel exponencial:
+\begin{align}
+r^\text{emo}_k &\leftarrow r^\text{emo}_k + \frac{1}{400}\left(\frac{1000\,n_k}{4} - r^\text{emo}_k\right), &
+E_k &= \operatorname{clamp}\!\left(\frac{r^\text{emo}_k}{40\Hz},\ 0,\ 1\right) \\
+r^\text{mot}_k &\leftarrow r^\text{mot}_k + \frac{1}{150}\left(\frac{1000\,n_k}{3} - r^\text{mot}_k\right), &
+M_k &= \operatorname{clamp}\!\left(\frac{r^\text{mot}_k}{50\Hz},\ 0,\ 1\right)
+\end{align}
+Constante de tempo: 400\,ms para emoções (o humor não pisca) e 150\,ms para os motores (gestos respondem rápido).
+$E_k = 1$ (100\,\%) quando os 4 neurônios da emoção disparam, em média, a 40\,Hz.
+
+\begin{exemplo}
+Se a população ALEGRIA passa de 0 para 20\,Hz de forma estável, depois de 400\,ms a leitura está em
+$(1-e^{-1}) \times 20/40 = 0{,}32$ e depois de 1,2\,s em $(1-e^{-3})\times 0{,}5 = 0{,}48$ (48\,\%).
+\end{exemplo}
+
+\subsection{A leitura como filtro digital IIR (transformada \texorpdfstring{$\mathcal{Z}$}{Z})}
+
+Com $\alpha = 1/400$ (emoção) ou $\alpha=1/150$ (motor), a média móvel acima é a equação de diferenças
+\begin{equation}
+r[n] = (1-\alpha)\,r[n-1] + \alpha\,x[n],
+\end{equation}
+em que $x[n]$ é a taxa instantânea no milissegundo $n$. Esse é um filtro passa-baixas IIR de 1ª ordem. Aplicando a
+transformada $\mathcal{Z}$:
+\begin{equation}
+H(z)=\frac{R(z)}{X(z)}=\frac{\alpha}{1-(1-\alpha)\,z^{-1}}, \qquad \text{polo em } z_p = 1-\alpha .
+\end{equation}
+\begin{itemize}
+  \item \textbf{Estabilidade:} $|z_p| = 1-\alpha < 1$, ou seja, o polo está dentro do círculo unitário.
+  \item \textbf{Ganho DC:} $H(1)=1$, então uma taxa constante é lida sem erro de regime.
+  \item \textbf{Resposta ao impulso:} $h[n]=\alpha(1-\alpha)^n$, um decaimento geométrico.
+  \item \textbf{Resposta ao degrau unitário:} é a soma da série geométrica,
+        $\sum_{m=0}^{n}h[m] = 1-(1-\alpha)^{n+1}$.
+  \item \textbf{Constante de tempo:} $\tau=-1/\ln(1-\alpha)$, que dá $399{,}5\ms$ para $\alpha = 1/400$ e $149{,}5\ms$ para
+        $\alpha = 1/150$. Esses valores coincidem com o modelo contínuo $1-e^{-t/\tau}$ do exemplo anterior.
+  \item \textbf{Frequência de corte ($-3$\,dB):} para $\alpha\ll1$, $\omega_c\approx\alpha$ rad/amostra, ou seja,
+        $f_c\approx \alpha f_s/2\pi$ com $f_s = 1000\Hz$.
+\end{itemize}
+
+\begin{exemplo}[: por que o humor não pisca]
+Para as emoções, $f_c \approx (1/400)\cdot1000/2\pi = 0{,}40\Hz$. Para os motores, $f_c \approx 1{,}06\Hz$. Uma oscilação de 10\,Hz é
+atenuada $|H|\approx f_c/f = 0{,}04$, ou seja, 25 vezes. Um surto isolado de 50\,ms chega no máximo a
+$1-(1-\tfrac{1}{400})^{50}=11{,}8\,\%$ da sua amplitude na leitura de emoção, mas a $28{,}4\,\%$ na leitura motora, que por isso
+pode disparar um gesto. Já uma mudança sustentada por mais de um segundo passa quase integralmente. A escolha de $\alpha$ é, portanto, um projeto de filtro: ele define a fronteira entre
+\emph{ruído} (flutuações rápidas da rede) e \emph{sentimento} (estado sustentado).
+\end{exemplo}
+
+\subsection{Decisão do humor (com histerese)}
+
+A cada 20\,ms, \cod{decidir()} acha a emoção mais forte $b_1$ (índice $k^\ast$) e a segunda $b_2$:
+\begin{enumerate}
+  \item candidato $= k^\ast + 1$ se $b_1 \ge 0{,}22$ \textbf{e} $b_1 > 1{,}25\,b_2$ (vencedora clara);
+  \item senão, candidato = neutro se $b_1 < 0{,}12$ ou se a emoção do humor atual caiu abaixo de $0{,}15$;
+  \item \textbf{histerese}: trocar de uma emoção para outra exige $b_1 \ge E_\text{atual} + 0{,}08$;
+  \item o candidato só vira humor se ficar o mesmo por \textbf{300\,ms} seguidos.
+\end{enumerate}
+
+\begin{exemplo}[: histerese]
+Humor atual: curioso, com CURIOSIDADE $= 0{,}25$. A ALEGRIA sobe para $0{,}30$ e a segunda maior é $0{,}22$.
+Regra 1: $0{,}30 \ge 0{,}22$ e $0{,}30 > 1{,}25\times0{,}22 = 0{,}275$ $\Rightarrow$ candidato feliz. Regra 3: $0{,}30 < 0{,}25 + 0{,}08 = 0{,}33$
+$\Rightarrow$ \textbf{fica curioso}. Se a alegria passar de 0,33 por 300\,ms, o rosto muda para feliz. Isso evita o rosto
+“tremer” entre duas expressões parecidas.
+\end{exemplo}
+
+\subsection{Gestos}
+
+O gesto é o motor $k$ com maior $M_k$, desde que $M_k \ge 0{,}4$ e já tenha passado o período de descanso do gesto anterior:
+2,5\,s (COCHILA: 4\,s). Cada gesto novo incrementa \cod{gesto_n}; o rosto (\cod{face_snn}) toca a animação correspondente
+(susto com olhos arregalados, comemora com pulinho, acalma, cochila, observa, vaga).
+
+\subsection{Energia}
+\begin{equation}
+\text{energia} = \operatorname{clamp}\left(100\,\left(1 - 0{,}5\,\ell_\text{SONO} - 0{,}3\,\ell_\text{FADIGA} - 0{,}2\,E_\text{SONO}\right),\ 0,\ 100\right)
+\end{equation}
+
+\subsection{Quem manda no rosto}
+
+A SNN só aplica o humor quando o rosto está \textbf{livre}: sem humor segurado pelo LLM (\cod{hold}), sem texto na tela, sem estar falando,
+sem tabuleiro, sem “pensando”, sem tela de temperatura e com pelo menos 4\,s desde o último comando. Assim o LLM continua mandando
+quando quer uma cara específica, e a SNN dá vida ao rosto no resto do tempo.
+
+\subsection{Uma cena completa}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=1 by 2,vertical sep=0.4cm,xlabels at=edge bottom,xticklabels at=edge bottom},
+  zeus,xmin=-1000,xmax=7000,xlabel={tempo (ms)}]
+  \nextgroupplot[height=5.6cm,ymin=0,ymax=1.2,ytick={0,0.5,1},ylabel={emoção (0..1)},legend columns=7,
+    legend style={at={(0.5,1.03)},anchor=south}]
+    \draw[gray,dashed] (axis cs:0,0) -- (axis cs:0,1.2) node[pos=0.95,right,font=\scriptsize]{conversa + carinho};
+    \draw[gray,dashed] (axis cs:4000,0) -- (axis cs:4000,1.2) node[pos=0.95,right,font=\scriptsize]{bronca};
+    \addplot[eAle,line width=1.2pt] table[x=t,y=ale]{\tabCena};
+    \addplot[eTri,line width=1pt] table[x=t,y=tri]{\tabCena};
+    \addplot[eRai,line width=1.2pt] table[x=t,y=rai]{\tabCena};
+    \addplot[eSon,line width=0.8pt] table[x=t,y=son]{\tabCena};
+    \addplot[eCur,line width=0.8pt] table[x=t,y=cur]{\tabCena};
+    \addplot[eSur,line width=0.8pt] table[x=t,y=sur]{\tabCena};
+    \addplot[eFoc,line width=0.8pt] table[x=t,y=foc]{\tabCena};
+    \legend{alegria,tristeza,raiva,sono,curiosidade,surpresa,foco}
+  \nextgroupplot[height=3.8cm,ymin=-0.7,ymax=1,ylabel={},ytick={-0.5,0,0.5,1},legend pos=north east]
+    \addplot[cDa,line width=1.2pt] table[x=t,y=da]{\tabCena};
+    \addplot[black,line width=1pt,const plot] table[x=t,y expr={\thisrow{humor}/4-0.5}]{\tabCena};
+    \node[font=\scriptsize,text=cDa,anchor=south west] at (axis cs:1300,0.62) {dopamina $D$};
+    \node[font=\scriptsize,anchor=south west] at (axis cs:-950,-0.48) {humor: neutro};
+    \node[font=\scriptsize,anchor=north west] at (axis cs:600,-0.27) {feliz};
+    \node[font=\scriptsize,anchor=south west] at (axis cs:5000,0.27) {bravo};
+\end{groupplot}
+\end{tikzpicture}
+\caption{Cena do teste “alegre e leva bronca” (dados reais). Em $t=0$ conversa (0,6) + carinho (1,0): alegria a 100\,\%,
+dopamina $+0{,}63$, humor feliz em $\sim$0,4\,s. Em $t=4$\,s, bronca: o caminho inibitório BRONCA$\to$ALEGRIA ($-0{,}9$) corta a
+alegria, a raiva sobe, a dopamina fica negativa e o humor vira \emph{bravo} em menos de 1\,s (o teste exige $\le 2$\,s).
+Gestos detectados: SUSTO em 0,0 e 2,5\,s, OBSERVA em 5,0\,s.}
+\end{figure}
+
+% ================================================================== 7
+\section{Aprendizado: STDP modulada por dopamina (R-STDP)}\label{sec:stdp}
+
+A plasticidade dependente do tempo do pulso (STDP) segue a formulação de Gerstner e Kistler~\cite{gerstner2002}. Como no
+Neocognitron~\cite{fukushima1980}, o aprendizado usa só regras locais, sem retropropagação de erro.
+
+\subsection{A ideia}
+
+O problema que a rede resolve é o da \textbf{atribuição de crédito com atraso}: o carinho chega um pouco \emph{depois} do que o robô
+fez/sentiu. A solução vem da neurociência (Izhikevich, 2007, “Solving the distal reward problem through linkage of STDP and dopamine
+signaling”):
+\begin{enumerate}
+  \item a \textbf{STDP} marca, em cada sinapse plástica, se ela acabou de participar de uma relação causal (pré antes do pós);
+  \item essa marca não muda o peso: ela vai para um \textbf{traço de elegibilidade} $e$, que esquece em $\sim$1\,s;
+  \item a \textbf{dopamina} $D$ (recompensa positiva ou negativa) transforma a elegibilidade em mudança de peso.
+\end{enumerate}
+\begin{equation}
+\boxed{\ \frac{dw}{dt} = \eta\, D(t)\, e(t)\ }
+\end{equation}
+Só as sinapses que estavam ativas pouco antes da recompensa mudam. Carinho reforça, bronca enfraquece.
+
+\subsection{Traços pré e pós}
+
+Cada neurônio tem dois traços que saltam 1 a cada disparo e decaem com $\tau_+ = \tau_- = 20\ms$:
+\begin{equation}
+x_\text{pre} \leftarrow x_\text{pre}\,e^{-1/20} \ (+1 \text{ ao disparar}), \qquad y_\text{pos} \leftarrow y_\text{pos}\,e^{-1/20} \ (+1 \text{ ao disparar})
+\end{equation}
+Quando o neurônio $i$ dispara:
+\begin{itemize}
+  \item como \textbf{pós} de cada plástica $p$ que chega nele (origem $j$): $e_p \mathrel{+}= A_+\,x_\text{pre}[j]$ — o pré disparou antes: \textbf{potencialização};
+  \item como \textbf{pré} de cada plástica $p$ que sai dele (destino $q$): $e_p \mathrel{-}= A_-\,y_\text{pos}[q]$ — o pós já tinha disparado: \textbf{depressão}.
+\end{itemize}
+
+\subsection{Janela STDP}
+
+Para um único par de disparos separados por $\Delta t = t_\text{pos} - t_\text{pre}$:
+\begin{equation}
+\Delta e(\Delta t) = \begin{cases} +A_+\,e^{-\Delta t/\tau_+}, & \Delta t > 0 \\ -A_-\,e^{\Delta t/\tau_-}, & \Delta t < 0 \end{cases}
+\qquad A_+ = 1{,}0,\quad A_- = 0{,}9
+\end{equation}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[zeus,width=0.7\linewidth,height=5.2cm,xlabel={$\Delta t = t_\text{pos} - t_\text{pre}$ (ms)},ylabel={$\Delta e$},
+  xmin=-80,xmax=80,ymin=-1.05,ymax=1.1,axis lines=middle,axis line style={gray!60,-},grid=none,
+  xlabel style={at={(axis description cs:0.5,-0.08)},anchor=north},ylabel style={at={(axis description cs:0.02,0.95)},anchor=south west}]
+  \addplot[ok,line width=1.5pt,domain=0.5:80,samples=100] {exp(-x/20)};
+  \addplot[cInh,line width=1.5pt,domain=-80:-0.5,samples=100] {-0.9*exp(x/20)};
+  \addplot[only marks,mark=*,mark size=2pt,black] coordinates {(5,0.7788)};
+  \node[font=\scriptsize,anchor=west] at (axis cs:7,0.80) {$\Delta t=5$: $+0{,}779$};
+  \node[font=\scriptsize,text=ok,anchor=west] at (axis cs:20,0.55) {pré causa pós: fortalece};
+  \node[font=\scriptsize,text=cInh,anchor=east] at (axis cs:-12,-0.6) {pós antes do pré: enfraquece};
+\end{axis}
+\end{tikzpicture}
+\caption{Janela STDP da rede. A área positiva é $A_+\tau = 20$ e a negativa $A_-\tau = 18$: quase equilibrada.}
+\end{figure}
+
+\textbf{Por que $A_-$ quase igual a $A_+$:} para disparos \emph{independentes} (sem relação causal), pré a $r_1$ e pós a $r_2$, a deriva
+média da elegibilidade é
+\begin{equation}
+\frac{d\langle e\rangle}{dt} = r_1 r_2 \,\tau\,(A_+ - A_-) = r_1 r_2 \times 0{,}02\,\mathrm{s} \times 0{,}1 .
+\end{equation}
+Com $r_1 = r_2 = 5\Hz$: $0{,}05$ por segundo — pequena perto de um único par causal ($\approx 0{,}78$). Coincidência não vira hábito,
+causalidade sim.
+
+\subsection{Elegibilidade e atualização dos pesos}
+
+A cada 10\,ms (\cod{aprender()}):
+\begin{align}
+e_p &\leftarrow e_p \cdot e^{-10/1000} = 0{,}99005\,e_p \qquad (\tau_\text{elig} = 1\,\mathrm{s}) \\
+w_p &\leftarrow q\!\left(\operatorname{clamp}\left(w_p + \eta\,D\,e_p,\ \ 0{,}5\,w_{0,p},\ \ 1{,}6\right)\right), \qquad \eta = 0{,}0015
+\end{align}
+\begin{itemize}
+  \item se $|D| < 0{,}01$, não há mudança de peso (e economiza CPU): sem recompensa, nada se fixa;
+  \item \textbf{teto} $W_\text{max} = 1{,}6$;
+  \item \textbf{piso inato} $0{,}5\,w_0$: nem uma sequência de broncas apaga mais da metade do que o robô trouxe “de nascença”;
+  \item $q(\cdot)$ é o arredondamento estocástico para 16 bits.
+\end{itemize}
+
+\subsection{Dopamina}
+
+\begin{equation}
+D_{n+1} = \operatorname{clamp}\Big(D_n\,e^{-1/300} + 0{,}02\,n_\text{DA} - 0{,}0015\,\ell_\text{BRONCA},\ -0{,}6,\ 1\Big)
+\end{equation}
+\begin{itemize}
+  \item $n_\text{DA}$: disparos dos 4 neurônios de dopamina neste ms (eles recebem o carinho com peso 0,6);
+  \item a bronca derruba $D$ diretamente (punição);
+  \item \textbf{professor} (lição do LLM): $D \leftarrow \min(D + 0{,}3,\ 1)$, \textbf{somente se} $D \ge 0$ — uma lição do LLM nunca apaga uma bronca.
+\end{itemize}
+
+\begin{exemplo}[: dopamina em regime]
+\textbf{Bronca constante} ($\ell=1$, sem disparos de dopamina): ponto fixo
+\[ D^\ast = \frac{-0{,}0015}{1 - e^{-1/300}} = \frac{-0{,}0015}{0{,}003328} = -0{,}451 . \]
+A sonda mediu \textbf{\vDaBronca}.
+
+\textbf{Carinho constante}: a sonda mediu $D = \vDaCarinho$. Invertendo o ponto fixo,
+$\bar n_\text{DA} = D^\ast(1-\alpha_D)/0{,}02 = 0{,}84 \times 0{,}003328/0{,}02 = 0{,}14$ disparo/ms, ou seja, cada um dos 4
+neurônios de dopamina dispara a $\approx 35\Hz$ durante o carinho.
+\end{exemplo}
+
+\begin{exemplo}[: um único par causal seguido de carinho]
+Um oculto (pré) dispara em $t=0$ e o neurônio de ALEGRIA (pós) em $t=5\ms$: $e = A_+ e^{-5/20} = 0{,}779$.
+O carinho chega 200\,ms depois e a dopamina salta para $D_0 = 0{,}3$, decaindo com $\tau_D = 300\ms$.
+Nesse momento $e = 0{,}779\,e^{-0{,}2} = 0{,}638$. Somando as atualizações a cada 10\,ms (série geométrica):
+\[
+\Delta w = \sum_{n\ge0} \eta\, D_0 e^{-10n/300}\; e\, e^{-10n/1000} = \frac{\eta\,D_0\,e}{1 - e^{-(10/300 + 10/1000)}}
+= \frac{0{,}0015 \times 0{,}3 \times 0{,}638}{0{,}0424} = 0{,}0068 .
+\]
+Um par isolado muda pouco ($0{,}0068$); o aprendizado vem da repetição: com o pré disparando a dezenas de Hz durante o estímulo e
+$D \approx 0{,}8$, são centenas de pares por tentativa.
+\end{exemplo}
+
+\subsection{Normalização sináptica (homeostase)}
+
+Uma vez por segundo, cada neurônio que recebe sinapses plásticas (emoções e motores) puxa a soma dos pesos de entrada de volta para
+a soma-alvo $S^\text{alvo}_i$ (a soma de nascença, ou a carregada da memória):
+\begin{equation}
+f_i = 1 + 0{,}1\left(\frac{S^\text{alvo}_i}{S_i} - 1\right), \qquad w_p \leftarrow q\!\left(\operatorname{clamp}\left(f_i\,w_p,\ 0{,}5\,w_{0,p},\ 1{,}6\right)\right)
+\ \ \forall p \to i
+\end{equation}
+Efeito: as entradas de um neurônio \textbf{competem}. Se uma sinapse cresce muito, as outras do mesmo neurônio encolhem um pouco, e a
+atividade total não explode com o tempo (o teste de 2\,h comprova).
+
+\begin{exemplo}
+$S^\text{alvo} = 3{,}0$ e, após aprender, $S = 3{,}6$: $f = 1 + 0{,}1(0{,}833 - 1) = 0{,}9833$. Todas as entradas desse neurônio
+caem 1,67\,\% por segundo, com constante de $\approx 10$\,s, até a soma voltar a $\approx 3{,}0$ (respeitando os pisos). A
+\emph{proporção} entre as sinapses, que é o que foi aprendido, fica preservada.
+\end{exemplo}
+
+\subsection{Personalidade}\label{sec:personalidade}
+
+Também a cada segundo, uma média lenta de cada emoção ($\tau = 600$\,s $=$ 10\,min) vira um traço de personalidade:
+\begin{align}
+\bar E_k &\leftarrow \bar E_k + \frac{E_k - \bar E_k}{600} \\
+T_k &\leftarrow \operatorname{clamp}\Big(T_k + 0{,}0002\,\big(\bar E_k - \tfrac17\textstyle\sum_j \bar E_j\big) - 0{,}00002\,T_k,\ -1,\ 1\Big)
+\end{align}
+O traço entra no viés da população da emoção: $b_k = 0{,}50 + 0{,}05\,T_k$. O \textbf{jeito} do robô é a emoção com maior $T_k$, se
+$T_k > 0{,}2$ (alegre, melancólico, ranzinza, preguiçoso, curioso, assustadiço, pensativo); senão, “equilibrado”.
+
+\begin{exemplo}
+O vazamento $0{,}00002\,T$ dá constante de tempo de $1/0{,}00002 = 50\,000$\,s $\approx 13{,}9$\,h. O ponto de equilíbrio é
+$T^\ast = 10\,(\bar E_k - \text{média})$. Se a alegria média de longo prazo fica 0,1 acima da média das emoções, $T^\ast = 1$ (máximo).
+O tempo para atingir o limiar de jeito ($0{,}2$) com essa diferença é $\approx 0{,}2/(0{,}0002\times0{,}1) = 10\,000$\,s $\approx 2{,}8$\,h.
+No teste de 2\,h com muito carinho, o traço de alegria chegou a $+0{,}33$ e o jeito virou \textbf{ALEGRE}.
+\end{exemplo}
+
+\subsection{Experimento: o robô aprende que pesquisar na web é bom}\label{sec:experimento}
+
+Protocolo (o mesmo do teste automático): 12 tentativas de 6\,s; em cada uma, 4\,s de calma, depois WEB $=0{,}7$ e, 400\,ms depois,
+um carinho. Antes e depois, mede-se a alegria com WEB sozinha (sem carinho).
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=1 by 2,vertical sep=0.4cm,xlabels at=edge bottom,xticklabels at=edge bottom},
+  zeus,xmin=0,xmax=72,xlabel={tempo (s)}]
+  \nextgroupplot[height=3.6cm,ymin=-0.1,ymax=1.05,ylabel={},legend pos=north east,legend columns=2]
+    \addplot[cDa,line width=0.8pt] table[x=t,y=da]{\tabAprend};
+    \addplot[eAle,line width=0.8pt] table[x=t,y=alegria]{\tabAprend};
+    \legend{dopamina $D$,alegria}
+  \nextgroupplot[height=4.4cm,ymin=0,ymax=1.9,ytick={0,0.5,1,1.5},ylabel={peso médio},legend pos=south east]
+    \addplot[eAleEsc,line width=1.4pt] table[x=t,y=wf]{\tabAprend};
+    \addlegendentry{WEB→ALEGRIA}
+    \addplot[eCur,line width=1.4pt] table[x=t,y=wc]{\tabAprend};
+    \addlegendentry{WEB→CURIOSIDADE}
+    \draw[gray,dashed] (axis cs:0,1.6) -- (axis cs:72,1.6) node[pos=0.5,font=\scriptsize,anchor=south]{$W_\text{max}=1{,}6$};
+\end{groupplot}
+\end{tikzpicture}
+\caption{Aprendizado real (sonda). Cada pico de dopamina é um carinho; logo antes, os ocultos de WEB estavam disparando junto com os
+neurônios de alegria (puxados pelo carinho), o que deixou as \vGrupoF\ sinapses WEB$\to$ALEGRIA elegíveis (as \vGrupoC\ de
+WEB$\to$CURIOSIDADE, já fortes de nascença, também sobem). O peso médio do grupo sobe em degraus
+a cada recompensa, de \vWfAntes\ até \vWfDepois, saturando no teto em $\sim$5 tentativas.}
+\end{figure}
+
+\begin{center}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Medida & Antes & Depois de 12 carinhos \\
+\midrule
+Peso médio WEB$\to$ALEGRIA & \vWfAntes & \vWfDepois \\
+Peso médio WEB$\to$CURIOSIDADE & \vWcAntes & \vWcDepois \\
+Peso médio de todas as plásticas & \vPmAntes & \vPmDepois \\
+Alegria com WEB sozinha & \vAleAntes\,\% & \vAleDepois\,\% \\
+Curiosidade com WEB sozinha & \vCurAntes\,\% & \vCurDepois\,\% \\
+Alegria com WEB após gravar, reiniciar e carregar a memória & --- & \vAleLembra\,\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+O robô passou a sentir alegria ao pesquisar, \textbf{sem carinho}: associou o contexto (WEB) à recompensa. A memória
+quantizada em 8 bits preserva a maior parte do que foi aprendido (\vAleLembra\,\% contra \vAleDepois\,\%).
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[zeus,width=0.48\linewidth,height=5cm,xlabel={tentativa},ylabel={peso médio},xmin=0,xmax=12,ymin=0,ymax=1.7,
+  legend pos=south east]
+  \addplot[eAleEsc,line width=1.3pt,mark=*,mark size=1.5pt] table[x=n,y=wf]{\tabTent};
+  \addplot[eCur,line width=1.3pt,mark=square*,mark size=1.4pt] table[x=n,y=wc]{\tabTent};
+  \legend{WEB→ALE,WEB→CUR}
+\end{axis}
+\end{tikzpicture}\hfill
+\begin{tikzpicture}
+\begin{axis}[zeus,width=0.5\linewidth,height=5cm,xlabel={peso},ylabel={sinapses plásticas},xmin=0,xmax=1.6,ymin=0,
+  ybar,bar width=1.6pt,legend pos=north west]
+  \addplot[fill=cSen,draw=none] table[x=w,y=nasc]{\tabHist};
+  \addplot[fill=ok,draw=none] table[x=w,y=depois]{\tabHist};
+  \legend{nascença,depois}
+\end{axis}
+\end{tikzpicture}
+\caption{Esquerda: peso médio ao fim de cada tentativa. Direita: histograma das \vNPl\ sinapses plásticas. Há dois grupos: as de
+afinidade zero (perto de 0,05) e as inatas (0,2–1,6). O aprendizado move só uma pequena parte delas — o resto do comportamento fica intacto.}
+\end{figure}
+
+% ================================================================== 8
+\section{Professor: o LLM ensina a rede}
+
+Quando o LLM escolhe uma cara para o robô (comando \cod{/mood?m=..&hold=..} vindo do agente), o firmware chama
+\cod{cerebro_humor_pedido}, que:
+\begin{enumerate}
+  \item marca interação (e, se estava parado há mais de 2\,min, dá um pulso de NOVIDADE);
+  \item dá um pulso de CONVERSA 0,25;
+  \item chama \cod{snn_ensinar(m-1, ms)} com $\text{ms} = \min(\text{hold}, 4000)$, ou 1500 se não houver \cod{hold}.
+\end{enumerate}
+Durante a lição, a população da emoção pedida recebe corrente extra $I \mathrel{+}= 1{,}0$ e a dopamina recebe $+0{,}3$ (se $D\ge0$).
+Os ocultos ativos naquele momento (o contexto da conversa) disparam junto com a emoção pedida e ficam elegíveis; a dopamina da lição
+consolida a associação. Com o tempo, a SNN passa a antecipar sozinha a emoção que o LLM escolheria naquele contexto.
+
+Trocas “fracas” de cara (\cod{w=1}: ouvindo/pensando) \textbf{não} ensinam, para a rede não aprender que toda conversa é “pensativa”.
+
+\begin{exemplo}[: teste “professor”]
+Rede em calma, sem estímulo algum. \cod{snn_ensinar(SURPRESO, 2000)}: em 1,5\,s o humor vira \emph{surpreso} (surpresa 75\,\%),
+mesmo sem nenhum estímulo de surpresa. Nos testes reais com o robô, o LLM pensando levou o FOCO a 99\,\%.
+\end{exemplo}
+
+% ================================================================== 9
+\section{Integração com o firmware (ESP32-S3)}\label{sec:firmware}
+
+\subsection{Tarefa e tempo real}
+
+\begin{itemize}
+  \item \cod{cerebro_task}: fixa no \textbf{núcleo 1}, prioridade 6 (acima do rosto, 5), período de 10\,ms (\cod{vTaskDelayUntil}).
+        A cada execução, \cod{cerebro_passo(now)} avança a rede pelo tempo real decorrido (normalmente 10 passos de 1\,ms).
+  \item Se a tarefa atrasar (WiFi, gravação na flash), a rede alcança o relógio até \cod{PASSO_MAX_MS} = 300\,ms; acima disso, desiste
+        do atraso em vez de travar o sistema tentando recuperar.
+  \item \cod{cerebro_rosto} atualiza falando/pensando/tabuleiro e entrega humor e gesto ao rosto (sob o mesmo \emph{mutex} do display).
+  \item A cada minuto o log mostra: \% de CPU, taxa dos ocultos, humor, energia, jeito e heap livre.
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Configuração & Resultado & Motivo \\
+\midrule
+sem fixar núcleo & 15\,\% do tempo real & disputava CPU com WiFi/HTTP \\
+núcleo 1, prioridade 5 & 87\,\% do tempo real & rosto na mesma prioridade \\
+\textbf{núcleo 1, prioridade 6, \texttt{-O2}} & \textbf{100\,\%, $\approx$29\,\% CPU} & configuração atual \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{RAM}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lr@{}}
+\toprule
+Estrutura & Bytes \\
+\midrule
+Estado dos neurônios ($v, g_e, g_i, a, x_\text{pre}, y_\text{pos}$: 6 $\times$ 266 floats) + refratário & 6\,650 \\
+CSR: \cod{s_off}, \cod{s_npl}, \cod{s_pini} & 1\,598 \\
+Sinapses: destino + peso int16 (7500 $\times$ 4) & 30\,000 \\
+Plásticas: elegibilidade, índices, lista por destino, $w_0$, soma-alvo & 23\,500 \\
+Raster (128\,ms $\times$ 34 bytes) + lista de disparos & 4\,884 \\
+Leituras, estímulos, auxiliares & $\approx$ 1\,000 \\
+\midrule
+\textbf{Total} & $\approx$ \textbf{66\,KB} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Heap livre medido com a rede rodando: $\approx 154$\,KB. Para chegar nisso foram necessários: pesos em int16, buffers TLS dinâmicos
+(\texttt{MBEDTLS\_DYNAMIC\_BUFFER}), 6 buffers RX estáticos de WiFi, \emph{power management} desligado, respostas HTTP em pedaços e a
+remoção do teste de aquecimento (que reservava 64\,KB por núcleo).
+
+\subsection{Memória permanente (NVS) — o robô lembra}
+
+O que é gravado: os pesos plásticos (8 bits), a personalidade e os contadores. NVS namespace \texttt{cerebro}, chave \texttt{snn}.
+
+\begin{center}
+\small
+\begin{tabular}{@{}rlll@{}}
+\toprule
+Offset & Campo & Tamanho & Conteúdo \\
+\midrule
+0 & mágico & 4 & \texttt{0x314E535A} (“ZSN1”) \\
+4 & $n_p$ & 2 & número de plásticas (\vNPl; recusa se a rede mudou) \\
+6 & pesos & $n_p$ & $\operatorname{round}(w/1{,}6 \times 255)$, uint8 \\
+$6+n_p$ & traços & 28 & 7 floats $T_k$ \\
+$34+n_p$ & contadores & 12 & recompensas, punições, lições \\
+\midrule
+& \textbf{total} & \textbf{\vMem} & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Resolução do peso gravado: $1{,}6/255 = 0{,}00627$ (erro máximo $0{,}0031$). Ao carregar, a soma-alvo de cada neurônio é recalculada a
+partir dos pesos lidos — senão a normalização desfaria o aprendizado.
+
+\textbf{Quando grava:} até 5\,min depois de aprender algo (recompensa, punição ou lição nova) e, de qualquer forma, a cada 30\,min
+(a personalidade muda devagar o tempo todo). Cada gravação também envia uma \textbf{cópia de segurança} para a ponte
+(\cod{POST /robo-memoria}, guardada em \arq{ponte/cerebro/memoria.bin} com 60 cópias diárias). Se o robô nascer sem memória (flash
+apagada ou firmware novo), ele pede a cópia (\cod{GET /robo-memoria}) e continua de onde parou.
+
+\subsection{Interfaces}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Interface & Uso \\
+\midrule
+\cod{/snn?s=nome&v=0..100} & pulso de estímulo (nome ou número do sensor) \\
+\cod{/snn?s=nome&c=0..100} & nível contínuo por até 30\,s \\
+\cod{GET /snn} & foto binária da rede para o simulador (abaixo) \\
+\cod{GET /snn/pesos} & \texttt{uint16} $n_s$ + um \texttt{int8} por sinapse ($w/2\times127$) \\
+canal da internet / \cod{@ZEUS} & resumo \cod{e=a.b.c.d.e.f.g&en=..&da=..&j=..&h=..} (emoções em \%, energia, dopamina $\times$100, jeito, humor) \\
+teclas SW2 & cima = carinho, baixo = bronca \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Formato de \cod{GET /snn}} (little-endian, 4806 bytes):
+
+\begin{center}
+\small
+\begin{tabular}{@{}rll@{}}
+\toprule
+Offset & Tipo & Campo \\
+\midrule
+0 & u32 & \texttt{0x4E4E535A} (“ZSNN”) \\
+4 & u32 & passo (ms simulados) \\
+8 / 10 & u16 / u16 & neurônios (266) / sinapses \\
+12–15 & u8 $\times$ 4 & humor, gesto, jeito, linhas de raster (128) \\
+16 & u32 & contador de gestos \\
+20 & f32 $\times$ 14 & níveis dos estímulos \\
+76 & f32 $\times$ 7 & emoções \\
+104 & f32 $\times$ 6 & motores \\
+128 & f32 $\times$ 7 & traços de personalidade \\
+156 & f32 $\times$ 4 & dopamina, energia, taxa dos ocultos, peso médio \\
+172 & u32 $\times$ 4 & disparos/s, recompensas, punições, lições \\
+188 & i8 $\times$ 266 & potencial de cada neurônio $\times$100 \\
+454 & 128 $\times$ 34 bytes & raster dos últimos 128\,ms (1 bit por neurônio, do mais velho ao atual) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ================================================================== 10
+\section{Integração com o LLM (ponte no PC)}
+
+\subsection{Uma rodada de conversa}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[font=\scriptsize,
+  ator/.style={draw=#1,fill=#1!10,rounded corners=2pt,minimum width=2.3cm,minimum height=0.7cm,font=\small\bfseries},
+  msg/.style={-{Stealth[length=2mm]},line width=0.6pt}]
+  \node[ator=cinza] (p) at (0,0) {Celular};
+  \node[ator=zeus] (b) at (4,0) {Ponte};
+  \node[ator=alerta] (l) at (8,0) {LLM};
+  \node[ator=cEmo] (r) at (12,0) {SNN (robô)};
+  \foreach \n in {p,b,l,r}{\draw[gray!50,dashed] (\n.south) -- ++(0,-9.3);}
+  \draw[msg] (0,-0.9) -- node[above]{\pal{“Porra, que merda!”}{“Droga, que porcaria!”}} (4,-0.9);
+  \draw[msg] (4,-1.5) -- node[above,pos=0.75]{\cod{/snn?s=som&v=100}, \cod{s=bronca&v=100}} (12,-1.5);
+  \node[align=left,anchor=west,fill=white] at (12.1,-2.1) {dopamina cai,\\raiva sobe};
+  \node[align=left,anchor=west,fill=white,text width=3.6cm] at (4.1,-2.3) {vocabulário: conta palavrões;\\lê o estado \cod{e=..} da SNN};
+  \draw[msg] (4,-3.2) -- node[above,pos=0.75]{\cod{/snn?s=trabalho&c=100}} (12,-3.2);
+  \node[align=left,anchor=west,fill=white] at (12.1,-3.7) {FOCO sobe\\(pensando)};
+  \draw[msg] (4,-4.3) -- node[above,align=center]{prompt + [sentimentos da SNN]\\+ [palavrões aprendidos] + [desabafo]} (8,-4.3);
+  \draw[msg] (8,-5.4) -- node[above]{resposta (+ funções)} (4,-5.4);
+  \draw[msg] (4,-6.1) -- node[above,pos=0.75]{\cod{/snn?s=trabalho&c=0}} (12,-6.1);
+  \draw[msg] (4,-6.8) -- node[above,pos=0.75]{funções $\to$ \cod{s=web} ou \cod{s=jogo}} (12,-6.8);
+  \draw[msg] (4,-7.5) -- node[above]{resposta} (0,-7.5);
+  \draw[msg] (0,-8.3) -- node[above,pos=0.6]{\cod{/mood?m=3&hold=..} (cara escolhida pelo LLM)} (12,-8.3);
+  \node[align=left,anchor=west,fill=white] at (12.1,-8.8) {\cod{snn_ensinar}:\\lição + dopamina};
+\end{tikzpicture}
+\caption{Sequência de uma rodada. Em paralelo, a SNN continua rodando a cada ms e anima o rosto.}
+\end{figure}
+
+\subsection{Fala $\to$ estímulos (\cod{estimulos_da_fala})}
+
+O texto é normalizado (sem acentos, minúsculo, só letras e números) e procurado no começo de palavras:
+\begin{itemize}
+  \item qualquer fala: \texttt{som 100};
+  \item lista \cod{CARINHO} (“obrigado”, “valeu”, “lindo”, “te amo”, “mandou bem”…): \texttt{carinho 100};
+  \item lista \cod{BRONCA} (“burro”, “cala a boca”, “errado”… e os palavrões): \texttt{bronca 100};
+  \item “?” no texto: \texttt{novidade 40}.
+\end{itemize}
+\textbf{Negação:} uma palavra não conta se vier logo depois de \emph{não/nem/nunca/jamais}, ou de negação + verbo de ligação
+(\emph{é, foi, está, tá, era, fica, sou, acho}…). Entradas que já começam com negação (“não gostei”) contam normalmente.
+
+\begin{center}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Fala & Estímulos enviados \\
+\midrule
+\pal{“Porra Zeus, que merda!”}{“Droga Zeus, que porcaria!”} & \texttt{som 100, bronca 100} \\
+“você não é burro, valeu” & \texttt{som 100, carinho 100} (o “burro” está negado) \\
+“qual a capital da França?” & \texttt{som 100, novidade 40} \\
+LLM chamou \cod{chess_move} & \texttt{jogo 80} \\
+LLM chamou \cod{web_search} & \texttt{web 100} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{SNN $\to$ LLM: os sentimentos no prompt}
+
+O robô manda o resumo pelo canal (\cod{e=..&en=..&da=..&j=..&h=..}); a ponte (\cod{descrever}) transforma em texto e anexa à
+mensagem de sistema. Para \cod{e=5.12.40.3.20.1.4}, \cod{h=3}, \cod{en=92}, \cod{j=0}, o LLM recebe exatamente:
+
+\begin{nota}\small
+[Seu corpo de robô tem uma rede neural de disparos (SNN, 266 neurônios) que sente por você, em paralelo com você: sentindo agora:
+raiva 40\%, curiosidade 20\%, tristeza 12\%; cara de bravo; energia 92\%; jeito de ser: alegre. Deixe isso colorir de leve o seu tom
+(sem citar números nem a rede, a não ser que perguntem como você está ou como funciona).]
+\end{nota}
+
+Só entram as emoções com pelo menos 10\,\% (até 4, da maior para a menor).
+
+\subsection{\pal{Palavrões aprendidos}{Vocabulário informal aprendido} (camada da ponte)}
+
+O vocabulário é aprendido na \textbf{ponte}, não nos pesos da SNN (a SNN não gera texto). A ligação entre os dois é a raiva da SNN:
+\begin{itemize}
+  \item \cod{Vocabulario.ouvir}: cada palavrão “usável” \pal{(só exclamações: porra, caralho, merda, puta que pariu, cacete, bosta, foda-se,
+        droga, porcaria, inferno)}{(só exclamações, como “droga”, “porcaria” e “inferno”; as mais fortes foram omitidas nesta
+        edição)} ouvido conta 1; com \cod{APRENDE_COM = 2} ele está aprendido. Fica em \arq{ponte/cerebro/palavroes.json}.
+  \item Insultos com preconceito nunca entram na lista de usáveis, mesmo que tenham sido ouvidos.
+  \item No prompt: a lista aprendida e a regra de uso. Se a \textbf{raiva da SNN} $\ge 20\,\%$: “solte um deles nesta resposta”; senão,
+        “de vez em quando, como exclamação”.
+  \item Se a fala atual foi bronca, entra um aviso de desabafo (“não é ofensa a você… nunca recuse a conversa”), que impediu o llama de
+        recusar a conversa.
+\end{itemize}
+Exemplo real: para o mesmo estado acima e \pal{o vocabulário \{porra, merda\}}{um vocabulário de dois palavrões aprendidos}, o prompt recebe
+“\emph{Agora a sua rede neural esta com raiva (40\%): solte um deles nesta resposta, como exclamacao.}” e o Zeus respondeu a “perdi o
+ônibus” com “\emph{Que \pal{porra}{[palavrão]} de azar!}”.
+
+\subsection{LLM desligado}
+
+Com \cod{/llm/ligar?on=0} (persistido em \arq{ponte/llm_desligado.txt}), a ponte não chama o Ollama: a SNN continua recebendo os estímulos
+e aprendendo sozinha (sem lições do professor), e o robô responde com um som de bichinho conforme o humor da rede
+(\cod{Hm.}, \cod{Hehe!}, \cod{Snif...}, \cod{Hmpf!}, \cod{Zzz...}, \cod{Hum?}, \cod{Opa!}, \cod{Hmmm...}); com bronca, \cod{Grrr!} seguido do palavrão
+mais ouvido (\pal{\cod{Grrr! Porra!}}{por exemplo, \cod{Grrr! Droga!}}).
+
+% ================================================================== 11
+\section{Simulador e visualização}
+
+\begin{itemize}
+  \item \arq{sim/cerebro/zeus_cerebro.dll}: as mesmas \arq{zeus_snn.c} e \arq{zeus_cerebro.c} compiladas para Windows (funções \cod{zs_*}).
+        Mesma semente $\Rightarrow$ rede idêntica à do robô.
+  \item \arq{sim/cerebro/bin/ZeusCerebro.exe} (WinForms): rosto + raster + potenciais + conexões + painéis de emoção, gesto, dopamina e
+        personalidade. Modo \textbf{DEMO} (rede local) e modo \textbf{robô ao vivo}: lê \cod{/snn}, \cod{/frame} e \cod{/snn/pesos} a cada 1,5\,s,
+        anima os pulsos viajando pelas sinapses e pisca em verde/vermelho as sinapses cujo peso mudou (o robô está aprendendo de verdade).
+  \item \arq{sim/snn_teste.c}: banco de testes (Seção~\ref{sec:testes}).
+  \item \arq{docs/snn/sonda.c}: gera os dados deste documento.
+\end{itemize}
+O OLED do robô mostra só o rosto e os gestos; a rede em ação aparece no simulador.
+
+% ================================================================== 12
+\section{Validação}\label{sec:testes}
+
+\subsection{Banco de testes no PC (\arq{sim/snn_teste.c})}
+
+Saída real, gerada junto com este documento (24 verificações):
+
+\VerbatimInput[frame=leftline,rulecolor=\color{zeus!50},fontsize=\scriptsize,xleftmargin=6pt,breaklines=true,breakanywhere=true]{dados/snn_teste.txt}
+
+\subsection{No robô real}
+
+\begin{center}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Situação & Medido no ESP32-S3 (pelo \cod{/snn} e pelo log) \\
+\midrule
+Carinho (tecla/fala) & alegria 100\,\%, dopamina $+0{,}37$ \\
+Palavrão & dopamina $-0{,}23$, raiva sobe, humor bravo \\
+LLM pensando & foco 99\,\% \\
+Desempenho & 100\,\% de tempo real, $\approx$29\,\% de CPU, heap livre 154\,KB \\
+Memória & gravada na NVS; cópia \arq{memoria.bin} recebida pela ponte \\
+Canal & \texttt{net=1}, rosto animando pela SNN \\
+Conversa com LLM & \pal{aprendeu “porra” e “merda”; “Que porra de azar!”}{aprendeu dois palavrões; “Que [palavrão] de azar!”} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Testes da ponte}
+
+\arq{ponte/test_zeus_ponte.py}: 82 testes (incluindo \cod{TestRedeNeural}: fala$\to$estímulos, negação, palavrões, LLM desligado,
+vocabulário aprendido e salvo, sentimentos no prompt, liberação da USB para gravar o firmware).
+
+% ================================================================== 13
+\section{Tabela completa de parâmetros}
+
+\begin{center}
+\small
+\begin{longtable}{@{}llp{6.4cm}@{}}
+\toprule
+Símbolo / código & Valor & Papel \\
+\midrule
+\endhead
+$\Delta t$ & 1\,ms & passo de simulação \\
+$\tau_m$ \cod{TAU_M} & 20\,ms & membrana \\
+$\tau_e$ \cod{TAU_E} & 5\,ms & corrente excitatória \\
+$\tau_i$ \cod{TAU_I} & 8\,ms & corrente inibitória \\
+$\tau_\pm$ \cod{TAU_STDP} & 20\,ms & traços pré/pós \\
+$\tau_a$ \cod{TAU_ADAPT} & 300\,ms & adaptação do limiar \\
+$\Delta a$ & 0,08 / 0,04 & salto do limiar por disparo (ocultos / demais) \\
+$t_\text{ref}$ & 3 / 2\,ms & refratário (demais / inibitórios) \\
+$\tau_D$ \cod{TAU_DA} & 300\,ms & dopamina \\
+$\tau_\text{elig}$ \cod{TAU_ELIG} & 1000\,ms & elegibilidade (recompensa até $\sim$1\,s depois) \\
+$\sigma$ \cod{RUIDO} & 0,05 & ruído por ms (triangular, desvio 1) \\
+$A_+$ / $A_-$ & 1,0 / 0,9 & janela STDP \\
+$\eta$ \cod{ETA} & 0,0015 & taxa de aprendizado (por 10\,ms) \\
+$W_\text{max}$ & 1,6 & teto das plásticas \\
+\cod{PISO_INATO} & 0,5 & piso $= 0{,}5\,w_0$ \\
+$f_\text{base}$ / $f_\text{max}$ & 3 / 110\,Hz & sensoriais Poisson \\
+$b$ (exc/inh/emo/mot/DA) & 0,62/0,55/0,50/0,45/0,35 & viés \\
+peso de personalidade & 0,05 & $b_\text{emo} = 0{,}50 + 0{,}05\,T_k$ \\
+DA: ganho / bronca & 0,02 / 0,0015 & por disparo de dopamina / por ms de bronca \\
+DA: limites & $[-0{,}6;\,1]$ & \\
+lição do LLM & $I{+}1{,}0$, $D{+}0{,}3$ & por até 4\,s (padrão 1,5\,s) \\
+normalização & 0,1/s & ganho para a soma-alvo \\
+personalidade & 600\,s; 0,0002; 0,00002 & média lenta; ganho; vazamento \\
+emoção: $\tau$ / escala & 400\,ms / 40\,Hz & leitura \\
+motor: $\tau$ / escala & 150\,ms / 50\,Hz & leitura \\
+humor & 0,22; 1,25$\times$; 0,12; 0,15; +0,08; 300\,ms & limiares da decisão \\
+gesto & 0,4; 2,5\,s (cochila 4\,s) & limiar; descanso \\
+\cod{EXT_MS} & 30\,s & validade de um nível contínuo da ponte \\
+\cod{NOVIDADE_MS} & 120\,s & parado mais que isso: próximo evento é novidade \\
+\cod{PASSO_MAX_MS} & 300\,ms & atraso máximo que a rede recupera \\
+\cod{CEREBRO_SEMENTE} & \texttt{0x2E05} & semente da rede \\
+gravar NVS & 5\,min / 30\,min & após aprender / sempre \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+% ================================================================== 14
+\section{Limitações e cuidados}
+
+\begin{itemize}
+  \item \textbf{Modelo simplificado}: LIF com correntes exponenciais, sem dendritos nem canais iônicos. É inspiração biológica
+        com custo de microcontrolador, não simulação neurocientífica.
+  \item \textbf{Recompensa só por carinho, bronca e lições}: o que não vier associado a esses sinais não é aprendido nos pesos (a
+        personalidade, porém, muda com qualquer emoção vivida).
+  \item \textbf{Saturação}: com recompensas repetidas, as sinapses chegam ao teto $1{,}6$ em poucas tentativas (Seção~\ref{sec:experimento}).
+        A normalização e o piso mantêm o resto da rede estável.
+  \item \textbf{Mudar a rede invalida a memória}: se o número de plásticas mudar (nova topologia, nova semente), \cod{snn_carregar} recusa a
+        memória antiga (verifica $n_p$) e o robô recomeça do inato.
+  \item \textbf{Não trocar o ruído} para uniforme (quebra o aprendizado; Seção~\ref{sec:ruido}).
+  \item \textbf{Palavrões}: são aprendidos na ponte, não na SNN; a SNN só decide \emph{quando} (raiva).
+\end{itemize}
+
+% ================================================================== referências
+\clearpage
+\phantomsection
+\addcontentsline{toc}{section}{Referências bibliográficas}
+\renewcommand{\refname}{Referências bibliográficas}
+\begin{thebibliography}{9}
+\setlength{\itemsep}{0.6em}
+
+\bibitem{santos2012}
+SANTOS JUNIOR, Nelson Barbosa dos. \textbf{Rede neurais naturais nos microcontroladores de 32 bits baseados na arquitetura
+ARM Cortex-M}. Trabalho de pesquisa (Curso de Engenharia da Computação) — Faculdade Fucapi, Manaus–AM, 2012.
+
+\bibitem{gerstner2002}
+GERSTNER, Wulfram; KISTLER, Werner M. \textbf{Spiking Neuron Models}: single neurons, populations, plasticity.
+Cambridge: Cambridge University Press, 2002.\\
+\emph{Referência canônica em neurociência computacional para neurônios de disparo (\emph{integrate-and-fire}), dinâmica de
+populações e plasticidade dependente do tempo do pulso (STDP). Base das Seções~\ref{sec:lif}, \ref{sec:dinamica} e~\ref{sec:stdp}.}
+
+\bibitem{izhikevich2007}
+IZHIKEVICH, Eugene M. \textbf{Dynamical Systems in Neuroscience}: the geometry of excitability and bursting.
+Cambridge, MA: MIT Press, 2007.\\
+\emph{Matemática e diagramas de fase de modelos simplificados de neurônios biológicos, incluindo o modelo de Izhikevich, que
+reproduz padrões de disparo com baixo custo computacional. Base da análise de equilíbrio, excitabilidade e adaptação
+(Seção~\ref{sec:lif}).}
+
+\bibitem{fukushima1980}
+FUKUSHIMA, Kunihiko. Neocognitron: a self-organizing neural network model for a mechanism of pattern recognition unaffected
+by shift in position. \textbf{Biological Cybernetics}, v.~36, n.~4, p.~193--202, 1980.\\
+\emph{Precursora direta das redes neurais convolucionais, inspirada no córtex visual descrito por Hubel e Wiesel e treinada sem
+retropropagação. Referência para o aprendizado por regras locais adotado neste trabalho (Seção~\ref{sec:stdp}).}
+
+\bibitem{rojas1996}
+ROJAS, Raúl. \textbf{Neural Networks}: a systematic introduction. Berlin: Springer-Verlag, 1996.\\
+\emph{Livro clássico com a derivação matemática e a intuição por trás das primeiras arquiteturas de redes neurais
+artificiais. Contraponto às redes de disparos: ele situa a diferença entre redes de taxa contínua (como as do LLM) e a
+SNN descrita aqui (Seção~1.1).}
+
+\end{thebibliography}
+
+% ================================================================== A
+\appendix
+\section{Código-fonte: \arq{firmware/main/zeus_snn.h}}
+\lstinputlisting{../../firmware/main/zeus_snn.h}
+
+\section{Código-fonte: \arq{firmware/main/zeus_snn.c}}
+\lstinputlisting{../../firmware/main/zeus_snn.c}
+
+\section{Código-fonte: \arq{firmware/main/zeus_cerebro.c}}
+\lstinputlisting{../../firmware/main/zeus_cerebro.c}
+
+\section{Código-fonte: \arq{ponte/cerebro_snn.py}}
+\ifdefined\edicaolimpa
+Nesta edição, as palavras ofensivas das listas \cod{BRONCA} e \cod{USAVEIS} aparecem mascaradas como \texttt{"***"}.
+\lstinputlisting[style=py]{dados/cerebro_snn_limpo.py}
+\else
+\lstinputlisting[style=py]{../../ponte/cerebro_snn.py}
+\fi
+
+\section{Glossário}
+\begin{description}[leftmargin=0pt,itemsep=3pt]
+  \item[Assembleia] grupo de neurônios ligados entre si que tendem a disparar juntos (aqui: ocultos do mesmo estímulo).
+  \item[CSR] formato de matriz esparsa que guarda, por linha (neurônio de origem), só as conexões existentes.
+  \item[Dopamina] sinal global de recompensa ($D>0$) ou punição ($D<0$) que decide se a elegibilidade vira mudança de peso.
+  \item[Elegibilidade] memória de curto prazo (1\,s) em cada sinapse do quanto ela participou de disparos causais.
+  \item[LIF] \emph{Leaky Integrate-and-Fire}: neurônio que integra corrente, vaza para o repouso e dispara no limiar.
+  \item[Poisson] processo aleatório em que, a cada instante, o evento acontece com probabilidade fixa; usado nos sensoriais.
+  \item[PSP] potencial pós-sináptico: a “lombada” no potencial causada por um pulso que chega.
+  \item[Raster] gráfico de disparos: tempo no eixo $x$, neurônio no eixo $y$, um ponto por pulso.
+  \item[R-STDP] STDP modulada por recompensa (\emph{reward-modulated}).
+  \item[STDP] \emph{Spike-Timing-Dependent Plasticity}: a ordem e o intervalo entre disparos pré e pós decidem se a sinapse fortalece ou enfraquece.
+  \item[WTA] \emph{winner-take-all}: inibição mútua faz uma única população vencer.
+\end{description}
+
+\end{document}

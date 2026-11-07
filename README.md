@@ -1,6 +1,6 @@
-﻿# Código-fonte do Zeus e da rede SNN
+# Código-fonte do Zeus e da rede SNN
 
-O diretório `projeto` contém os fontes e configurações do firmware ESP32, da ponte Python, do aplicativo Android e do simulador Windows. A SNN é escrita em C; a ponte usa Python e o simulador usa C#. Credenciais, memórias aprendidas e binários não fazem parte do pacote.
+O diretório `projeto` contém os fontes e configurações do firmware ESP32, da ponte Python, do aplicativo Android, dos simuladores Windows, ferramentas e fontes da documenta??o. A SNN é escrita em C; a ponte usa Python e o simulador usa C#. Credenciais, memórias aprendidas e binários não fazem parte do pacote.
 
 ## Compilar a SNN no PC
 
