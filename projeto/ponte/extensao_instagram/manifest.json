@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Zeus - Instagram",
+  "version": "1.0.0",
+  "description": "Deixa o robô Zeus postar no Instagram pelo seu Chrome, só depois da sua confirmação por voz.",
+  "host_permissions": ["http://127.0.0.1:8770/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    { "matches": ["https://www.instagram.com/*"], "js": ["content.js"], "run_at": "document_idle" }
+  ]
+}

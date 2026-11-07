@@ -1,0 +1,7 @@
+# A ponte usa so a biblioteca padrao, exceto o xadrez.
+# O motor Stockfish e procurado em: zeus_ponte.json ("stockfish"), variavel ZEUS_STOCKFISH,
+# ponte\stockfish.exe e D:\chess_simulator\stockfish.exe. Sem ele, joga um adversario simples.
+chess>=1.10
+opencv-python>=4.8   # webcam no app (ja instalado nesta maquina: 5.0)
+piper-tts>=1.3       # voz pt-BR no alto-falante do notebook (offline); modelo em ponte\vozes (baixar_voz.ps1)
+pyserial>=3.5       # robo no cabo USB do notebook quando esta sem WiFi

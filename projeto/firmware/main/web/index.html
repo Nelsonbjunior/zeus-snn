@@ -1,0 +1,1025 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg">
+<title>Zeus</title>
+<style>
+:root{--bg:#0b0b0b;--card:#1b1b1b;--line:#2a2a2a;--txt:#eee;--dim:#9a9a9a;--azul:#3b82f6;--roxo:#a855f7;--verde:#22c55e;--verm:#ef4444}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0 auto;max-width:640px;background:var(--bg);color:var(--txt);font:600 16px system-ui;text-align:center;padding-bottom:28px}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 4px}
+header h1{font-size:20px;margin:0;letter-spacing:2px}
+.dots{display:flex;gap:10px;font:500 12px system-ui;color:var(--dim)}
+.dot::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:4px}
+.dot.ok::before{background:var(--verde)}.dot.bad::before{background:var(--verm)}
+#h{font:600 13px system-ui;color:var(--dim);margin:2px 16px 0;text-align:left}
+#ans{margin:10px 16px;padding:14px;background:var(--card);border-radius:14px;min-height:22px;font-weight:400;line-height:1.35;text-align:left}
+.pad{padding:0 16px}
+.row{display:flex;gap:8px;padding:0 16px}
+#q{flex:1;min-width:0;padding:14px;border:0;border-radius:12px;background:#222;color:var(--txt);font:400 16px system-ui}
+#go{padding:14px 18px;border:0;border-radius:12px;font:700 16px system-ui;background:var(--verde)}
+#conv{width:100%;padding:18px;border:0;border-radius:14px;background:var(--roxo);color:#fff;font:800 18px system-ui}
+#alexa{width:100%;margin-top:8px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#141414;color:var(--txt);font:700 15px system-ui}
+#alexa.on{background:#1e3a8a;border-color:var(--azul)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px}
+.grid button{padding:14px 4px;border:0;border-radius:12px;background:#333;color:var(--txt);font:600 14px system-ui}
+.moods{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px 14px}
+.moods button{padding:12px 0;border:0;border-radius:12px;font:700 13px system-ui;color:#000}
+#m1{background:var(--verde)}#m3{background:var(--verm)}#m2{background:#60a5fa}
+#m5{background:#eab308}#m6{background:#f97316}#m4{background:#7c3aed;color:#fff}
+#xadrez{display:none;margin:4px 16px 14px;padding:12px;background:var(--card);border-radius:14px}
+#tab{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:100%;max-width:360px;margin:0 auto;aspect-ratio:1;border-radius:6px;overflow:hidden}
+#tab div{min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font:400 min(9vw,36px)/1 serif;user-select:none}
+#tab .cl{background:#e8d7b5;color:#000}#tab .ce{background:#a57a52;color:#000}
+#tab .ul{box-shadow:inset 0 0 0 3px #facc15}#tab .sel{box-shadow:inset 0 0 0 3px var(--azul)}
+#xinfo{margin:8px 0 0;font:500 14px system-ui;color:var(--dim)}
+#fotoBox{display:none;margin:4px 16px 14px;padding:12px;background:var(--card);border-radius:14px}
+#fotoBox h2{margin:0 0 8px;font:700 14px system-ui;color:var(--dim);text-align:left}
+#fotoImg{display:block;width:100%;border-radius:10px;background:#000}
+/* camera do notebook: janela suspensa (grande) ou minimizada no canto (arrastavel) */
+#camBox{display:none;position:fixed;inset:0;z-index:8;padding:16px;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#camBox.on{display:flex;animation:camEntra .22s ease-out}
+@keyframes camEntra{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+#camCard{width:100%;max-width:560px;background:#141414;border:1px solid var(--line);border-radius:20px;
+  overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.65)}
+#camTopo{display:flex;align-items:center;gap:8px;padding:10px 10px 10px 14px}
+.aoVivo{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;background:var(--verm);
+  color:#fff;font:800 11px system-ui;letter-spacing:.6px}
+.aoVivo::before{content:'';width:7px;height:7px;border-radius:50%;background:#fff;animation:camPisca 1.2s infinite}
+@keyframes camPisca{50%{opacity:.2}}
+#camRotulo{flex:1;text-align:left;font:600 14px system-ui;color:#ddd}
+.camBtn{width:36px;height:36px;flex:none;border:0;border-radius:50%;background:#2a2a2a;color:#eee;font:700 16px system-ui}
+#camImg{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#000;touch-action:none}
+#camRodape{display:flex;gap:8px;padding:12px}
+#camMin{padding:13px 16px;border:0;border-radius:12px;background:#2a2a2a;color:#eee;font:700 15px system-ui}
+#camFechar{flex:1;padding:13px;border:0;border-radius:12px;background:var(--verm);color:#fff;font:800 15px system-ui}
+#camBox.mini{inset:auto;right:12px;bottom:12px;padding:0;width:min(46vw,240px);background:none;
+  -webkit-backdrop-filter:none;backdrop-filter:none;animation:none}
+#camBox.mini #camCard{border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.7)}
+#camBox.mini #camTopo{padding:5px 5px 5px 8px}
+#camBox.mini #camRotulo,#camBox.mini #camRodape{display:none}
+#camBox.mini .camBtn{width:28px;height:28px;font-size:13px}
+details{margin:6px 16px;text-align:left;color:var(--dim);font:500 14px system-ui}
+details input,details select{width:100%;margin:6px 0;padding:10px;border:0;border-radius:10px;background:#222;color:var(--txt);font:400 14px system-ui}
+details button{padding:10px 14px;border:0;border-radius:10px;background:#333;color:var(--txt);font:600 14px system-ui}
+</style></head><body>
+<header><h1>ZEUS</h1>
+ <div class="dots"><span id="dRobo" class="dot">rob&ocirc;</span><span id="dPonte" class="dot">notebook</span></div></header>
+<div id="h">...</div>
+<div id="ans">aperte CONVERSAR, ligue o modo Alexa ou escreva</div>
+<div class="row"><input id="q" placeholder="ou escreva aqui..." enterkeyhint="send"><button id="go">&#9654;</button></div>
+<div class="pad" style="padding-top:10px">
+ <button id="conv">CONVERSAR</button>
+ <button id="alexa">Modo Alexa: desligado</button>
+</div>
+<div class="grid">
+ <button data-q="que horas são?">que horas s&atilde;o</button>
+ <button data-q="quanto está o bitcoin?">bitcoin</button>
+ <button data-q="qual a temperatura agora?">temperatura</button>
+ <button id="bCam">&#128247; liga/desliga webcam</button>
+ <button data-q="vamos jogar xadrez? eu jogo de brancas">&#9823; xadrez</button>
+ <button data-q="abre o YouTube no notebook">&#9654; YouTube</button>
+</div>
+<div id="fotoBox"><h2>&#128248; &uacute;ltima foto (no notebook, pronta para o Instagram)</h2><img id="fotoImg" alt=""></div>
+<div id="camBox"><div id="camCard">
+ <div id="camTopo"><span class="aoVivo">AO VIVO</span><span id="camRotulo">c&acirc;mera do notebook</span>
+  <button class="camBtn" id="camTam" title="minimizar">&#8211;</button><button class="camBtn" id="camX" title="desligar">&#10005;</button></div>
+ <img id="camImg" alt="câmera do notebook">
+ <div id="camRodape"><button id="camMin">minimizar</button><button id="camFechar">desligar c&acirc;mera</button></div>
+</div></div>
+<div id="xadrez"><div id="tab"></div><div id="xinfo"></div>
+ <div style="margin-top:8px;display:flex;gap:8px;justify-content:center"><button id="xpc" style="padding:10px 14px;border:0;border-radius:10px;background:#333;color:#eee;font:600 14px system-ui">ver no notebook</button>
+ <button id="xfim" style="padding:10px 14px;border:0;border-radius:10px;background:var(--verm);color:#fff;font:700 14px system-ui">encerrar partida</button></div></div>
+<div class="moods">
+ <button id="m1">FELIZ</button><button id="m3">BRAVO</button><button id="m2">TRISTE</button>
+ <button id="m5">CURIOSO</button><button id="m6">SURPRESO</button><button id="m4">SONO</button>
+</div>
+<details><summary>Ajustes</summary>
+ <label>Endere&ccedil;o da ponte no notebook (vazio = o do firmware)</label>
+ <input id="cPonte" placeholder="http://192.168.15.10:8770" inputmode="url">
+ <label>Palavra para acordar no modo Alexa</label>
+ <input id="cWake" placeholder="zeus">
+ <label>Nome deste aparelho (aparece no xadrez)</label>
+ <input id="cNome" maxlength="24" placeholder="automático">
+ <label>A voz do Zeus sai no</label>
+ <select id="cSaida"><option value="notebook">alto-falante do notebook</option><option value="celular">celular</option></select>
+ <button id="cSalva">salvar</button> <button id="cTesta">testar notebook</button>
+ <button id="cSair">esquecer o código neste aparelho</button>
+</details>
+<script>
+const $=id=>document.getElementById(id);
+const ans=$('ans'),h=$('h'),q=$('q'),conv=$('conv'),alexaBtn=$('alexa');
+const MOODS=['neutro','feliz','triste','bravo','sono','curioso','surpreso','pensando'];
+function lsGet(k){try{return localStorage.getItem('zeus.'+k)||''}catch(e){return ''}}
+function lsSet(k,v){try{localStorage.setItem('zeus.'+k,v)}catch(e){}}
+function status(t){ans.textContent=t}
+// Pela internet (https://zeus.appdevtest.shop) quem serve a pagina e a ponte do notebook: os
+// comandos do rosto vao para /robo/... e precisam do token, que vem do codigo de acesso.
+const REMOTO=!!window.ZEUS_REMOTO;
+function roboUrl(u){return REMOTO?'/robo'+u:u}
+function roboOpts(){return REMOTO?{headers:cabecalhos(lsGet('token'))}:undefined}
+// Nome deste aparelho na partida contra o Zeus (painel do notebook e OLED): o de Ajustes, o do
+// Android (app) ou o modelo que o navegador informa.
+let NOME_AUTO='';
+function nomeAparelho(){
+  const n=lsGet('nome');if(n)return n;
+  try{if(window.ZeusAndroid&&ZeusAndroid.nomeAparelho){const a=ZeusAndroid.nomeAparelho();if(a)return a}}catch(e){}
+  if(NOME_AUTO)return NOME_AUTO;
+  const ua=navigator.userAgent;
+  return /iPhone/.test(ua)?'iPhone':/iPad/.test(ua)?'iPad':/Android/.test(ua)?'Android':
+         /Windows/.test(ua)?'Windows':/Mac/.test(ua)?'Mac':'navegador';
+}
+try{navigator.userAgentData&&navigator.userAgentData.getHighEntropyValues(['model']).then(v=>{
+  if(v.model)NOME_AUTO=v.model})}catch(e){}
+function cabecalhos(token){
+  return {'X-Zeus-Token':token,'X-Zeus-Dispositivo':dispositivo(),'X-Zeus-Nome':encodeURIComponent(nomeAparelho())};
+}
+function esp(u){fetch(roboUrl(u),roboOpts()).catch(()=>{})}
+async function req(u){try{const r=await fetch(roboUrl(u),roboOpts());return r.ok?await r.json():null}catch(e){return null}}
+
+// ---------------- configuracao e ponte do notebook ----------------
+let cfg=null;
+async function loadCfg(){
+  if(cfg)return cfg;
+  if(REMOTO)return await loadCfgRemoto();
+  try{cfg=await(await fetch('/cfg')).json()}catch(e){return null}
+  const o=lsGet('ponte');if(o)cfg.ponte=o.replace(/\/+$/,'');
+  return cfg;
+}
+// codigo de acesso: pedido uma vez por aparelho; o token fica guardado no aparelho
+function pedirCodigo(msg){
+  return new Promise(res=>{
+    const f=document.createElement('div');
+    f.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;'+
+      'justify-content:center;z-index:9;padding:16px';
+    f.innerHTML='<div style="background:#1b1b1b;border-radius:16px;padding:20px;width:100%;max-width:360px;text-align:left">'+
+      '<h2 style="margin:0 0 6px">Código de acesso</h2><p style="color:#9a9a9a;font:400 14px system-ui;margin:0 0 12px">'+
+      (msg||'Digite o código do Zeus (aparece na ponte do notebook). É pedido uma vez neste aparelho.')+'</p>'+
+      '<input id="codAc" inputmode="numeric" autocomplete="one-time-code" style="width:100%;padding:14px;border:0;'+
+      'border-radius:12px;background:#222;color:#eee;font:600 20px system-ui;letter-spacing:4px">'+
+      '<button id="codOk" style="width:100%;margin-top:12px;padding:14px;border:0;border-radius:12px;'+
+      'background:#22c55e;font:800 16px system-ui">entrar</button></div>';
+    document.body.appendChild(f);
+    const ir=()=>{const v=$('codAc').value.trim();if(v){f.remove();res(v)}};
+    $('codOk').onclick=ir;$('codAc').onkeydown=e=>{if(e.key==='Enter')ir()};
+    setTimeout(()=>$('codAc').focus(),100);
+  });
+}
+let entrando=null;
+function loadCfgRemoto(){
+  if(!entrando)entrando=(async()=>{
+    let msg='';
+    for(;;){
+      if(!lsGet('token')){
+        const codigo=await pedirCodigo(msg);
+        try{
+          const r=await fetch('/acesso',{method:'POST',headers:{'Content-Type':'application/json'},
+                                         body:JSON.stringify({codigo})});
+          const j=await r.json();
+          if(!r.ok){msg=j.erro||'código errado';continue}
+          lsSet('token',j.token);
+        }catch(e){msg='sem conexão com o Zeus: confira a internet';continue}
+      }
+      try{
+        const r=await fetch('/app/cfg',{headers:{'X-Zeus-Token':lsGet('token')}});
+        if(r.status===403){lsSet('token','');msg='o código mudou: digite de novo';continue}
+        cfg=await r.json();
+      }catch(e){entrando=null;return null}
+      cfg.ponte=location.origin;cfg.token=lsGet('token');
+      return cfg;
+    }
+  })();
+  return entrando;
+}
+const PONTE_OFF='não consegui falar com o notebook. A ponte zeus_ponte.py está rodando, '+
+  'o endereço da ponte está certo e o firewall liberou a porta 8770?';
+// Se o roteador isola o celular do notebook (WiFi 5 GHz com isolamento), o cabo USB
+// resolve: "adb reverse tcp:8770 tcp:8770" faz o 127.0.0.1:8770 do celular chegar na ponte.
+const PONTE_USB='http://127.0.0.1:8770';
+// Todo pedido tem prazo: um pedido perdido (tela bloqueou, rede trocou, ponte reiniciou) deixava
+// o Zeus "pensando" para sempre, sem ouvir mais nada.
+async function fetchPrazo(url,o,ms){
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
+  try{return await fetch(url,Object.assign({},o||{},{signal:c.signal}))}finally{clearTimeout(t)}
+}
+function prazoPonte(path){
+  return path==='/llm'?60000:path==='/falar'?90000:path.startsWith('/insta/')?150000:path.startsWith('/page/')?60000:20000;
+}
+// cada aparelho tem um codigo aleatorio proprio: a ponte guarda uma partida de xadrez por aparelho
+var DISP=null;                                    // var: roboOpts pode chamar antes desta linha
+function dispositivo(){
+  if(DISP)return DISP;
+  DISP=lsGet('disp');
+  if(!/^[A-Za-z0-9-]{8,64}$/.test(DISP)){
+    DISP=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():
+         Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,8);
+    lsSet('disp',DISP);
+  }
+  return DISP;
+}
+async function ponte(path,body){
+  if(!await loadCfg())return {erro:'não consegui ler a configuração do Zeus'};
+  const bases=[cfg.ponte].concat(cfg.ponte===PONTE_USB?[]:[PONTE_USB]);
+  for(const base of bases){
+    try{
+      const o={headers:cabecalhos(cfg.token)};
+      if(body){o.method='POST';o.headers['Content-Type']='application/json';o.body=JSON.stringify(body)}
+      const r=await fetchPrazo(base+path,o,prazoPonte(path));
+      const j=await r.json();
+      if(base!==cfg.ponte){console.log('[ponte] usando',base);cfg.ponte=base}   // fica nela ate recarregar
+      $('dPonte').className='dot ok';
+      return j;
+    }catch(e){
+      if(e.name==='AbortError')return {erro:'o notebook demorou demais para responder'};
+    }
+  }
+  $('dPonte').className='dot bad';
+  return {erro:PONTE_OFF};
+}
+
+// ---------------- estado do robo ----------------
+async function poll(){
+  const d=await req('/state');
+  $('dRobo').className='dot '+(d?'ok':'bad');
+  if(d)h.textContent=(ocupado?'pensando · ':falando?'falando · ':sessao?'ouvindo · ':
+                      wakeOn?'esperando "'+wakeWord()+'" · ':'')+d.mood;
+}
+setInterval(poll,1000);poll();
+
+// ---------------- xadrez (tabuleiro no celular) ----------------
+const UNI={K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',
+           k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
+let xs=null,xsel=-1;
+function sqName(i){return 'abcdefgh'[i%8]+(8-Math.floor(i/8))}
+function showBoard(s){
+  if(!s||!s.casas||s.casas.length!==64)return;
+  xs=s;xsel=-1;
+  // o OLED nao mostra o tabuleiro: a ponte mostra o Zeus calculando e depois o lance dele
+  drawBoard();
+}
+function drawBoard(){
+  if(!xs)return;
+  $('xadrez').style.display='block';
+  const flip=!!xs.visto_pelas_pretas,last=xs.ultimo_lance_uci||'';
+  const tab=$('tab');tab.innerHTML='';
+  for(let k=0;k<64;k++){
+    const i=flip?63-k:k,r=Math.floor(k/8),c=k%8,p=xs.casas[i];
+    const d=document.createElement('div');
+    d.className=((r+c)%2?'ce':'cl')+(last.includes(sqName(i))?' ul':'')+(i===xsel?' sel':'');
+    d.textContent=p==='.'?'':UNI[p]||'';
+    d.onclick=()=>tapSquare(i);
+    tab.appendChild(d);
+  }
+  $('xinfo').textContent=(xs.voce?'você: '+xs.voce.descricao+' · ':'')+
+    (xs.zeus?'Zeus: '+xs.zeus.descricao:'')+(xs.fim?' · '+xs.resultado:xs.xeque?' · xeque!':'');
+}
+// jogar tocando: toque na peca, depois na casa de destino
+async function tapSquare(i){
+  if(!xs||xs.fim)return;
+  if(xsel<0){if(xs.casas[i]!=='.'){xsel=i;drawBoard()}return}
+  const lance=sqName(xsel)+sqName(i);xsel=-1;
+  if(lance.slice(0,2)===lance.slice(2)){drawBoard();return}
+  const s=await ponte('/chess/move',{lance});
+  if(s.erro){status(s.erro);drawBoard();return}
+  showBoard(s);
+  // uma fala so (antes eram duas ao mesmo tempo, e a segunda entrava na fila da voz)
+  const f=(s.zeus?'Joguei '+s.zeus.descricao+'.':'')+(s.fim?' '+s.resultado.charAt(0).toUpperCase()+s.resultado.slice(1)+'.':'');
+  if(f.trim())falar(f.trim());
+}
+$('xpc').onclick=()=>ponte('/chess/open').then(r=>r.erro&&status(r.erro));
+// direto na ponte (sem passar pelo modelo): tira o tabuleiro do celular e do OLED
+$('xfim').onclick=async()=>{
+  const r=await runFn('chess_end',{});
+  const t=r.erro?(/não tem partida/.test(r.erro)?'Não tinha partida em andamento.':'Desculpe, '+r.erro):'Partida encerrada.';
+  if(r.erro&&/não tem partida/.test(r.erro)){xs=null;$('xadrez').style.display='none';esp('/board?off=1')}
+  status(t);falar(t);
+};
+
+// ================= FUNCOES (o cerebro pede, a pagina executa) =================
+// trava do WhatsApp: so envia se o usuario FALOU depois do rascunho, e falou confirmando
+let lastUserAt=0,lastUserText='',waDraftAt=0;
+const WA_SIM=/\b(pode|envia|enviar|manda|mandar|sim|confirmo|confirma|isso)\b/i;
+const WA_NAO=/\b(n[aã]o|cancela|espera|pera|muda|troca|errado)\b/i;
+const WX={0:'céu limpo',1:'quase limpo',2:'parcialmente nublado',3:'nublado',45:'neblina',
+  48:'neblina',51:'garoa',53:'garoa',55:'garoa',61:'chuva fraca',63:'chuva',65:'chuva forte',
+  80:'pancadas de chuva',81:'pancadas de chuva',82:'pancadas fortes',95:'trovoada'};
+const PC_ALVOS=['whatsapp','vscode','chrome','explorador','calculadora','bloco_de_notas','configuracoes',
+  'spotify','agenda','gmail','drive','youtube','github','maps','instagram'];
+// trava do Instagram, igual a do WhatsApp: so publica se a pessoa FALOU confirmando depois do rascunho
+let instaDraftAt=0;
+const INSTA_SIM=/\b(pode|posta|postar|publica|publicar|sim|confirmo|confirma|manda|isso)\b/i;
+
+// ---------------- foto do celular ----------------
+function mostrarFoto(){
+  $('fotoImg').src=cfg.ponte+'/foto/ultima?t='+encodeURIComponent(cfg.token)+'&n='+Date.now();
+  $('fotoBox').style.display='block';
+  $('fotoBox').scrollIntoView({behavior:'smooth',block:'center'});
+}
+// depois de publicada: some do app e da galeria do celular (o app Android apaga a copia dele)
+function limparFoto(){
+  $('fotoImg').removeAttribute('src');$('fotoBox').style.display='none';
+  if(NATIVO&&ZeusAndroid.apagarFoto)try{ZeusAndroid.apagarFoto()}catch(e){}
+}
+function tirarFoto(){
+  return new Promise(res=>{
+    if(!NATIVO){res({erro:'tirar foto só funciona no app Zeus do Android'});return}
+    const t=setTimeout(()=>{window.__zeusFoto=null;res({erro:'a câmera não respondeu'})},180000);
+    window.__zeusFoto=(st,d)=>{
+      clearTimeout(t);window.__zeusFoto=null;
+      if(st==='ok'){mostrarFoto();res({ok:true,foto:d,onde:'já está no notebook, pronta para postar'})}
+      else if(st==='cancelada')res({erro:'a pessoa cancelou a foto'});
+      else res({erro:d||'a foto falhou'});
+    };
+    ZeusAndroid.tirarFoto(cfg.ponte,cfg.token);
+  });
+}
+const PC_FECHAR=['youtube','instagram','gmail','agenda','drive','github','maps','xadrez','whatsapp','calculadora',
+  'bloco_de_notas','spotify','chrome','firefox','explorador','configuracoes','webcam'];
+
+// ---------------- camera do notebook no app ----------------
+function camModo(m){                         // '' = fechada, 'on' = janela grande, 'on mini' = no canto
+  const box=$('camBox');
+  box.className=m;
+  if(m!=='on mini'){box.style.left=box.style.top='';box.style.right=box.style.bottom=''}
+  $('camTam').innerHTML=m==='on mini'?'&#10530;':'&#8211;';      // expandir / minimizar
+  $('camTam').title=m==='on mini'?'expandir':'minimizar';
+}
+function cameraAberta(){return $('camBox').className!==''}
+function mostrarCamera(ligada){
+  const img=$('camImg');
+  if(ligada){
+    // o video acabou (alguem desligou para todos, ou desligou sozinha sem ninguem assistindo)
+    img.onerror=()=>{if(cameraAberta())status('a câmera do notebook foi desligada');camModo('');img.removeAttribute('src')};
+    if(!cameraAberta()||!img.getAttribute('src'))   // ja assistindo: nao reabre o video
+      img.src=cfg.ponte+'/webcam/stream?t='+encodeURIComponent(cfg.token)+'&n='+Date.now();
+    camModo('on');
+  }else{
+    img.onerror=null;img.removeAttribute('src');camModo('');
+  }
+}
+// fechar a janela tira SO este aparelho do video; a camera desliga quando o ultimo sair
+async function sairCamera(){
+  mostrarCamera(false);
+  const r=await ponte('/webcam?a=sair');
+  status(r.erro?'Desculpe, '+r.erro:r.feito.charAt(0).toUpperCase()+r.feito.slice(1)+'.');
+}
+$('camFechar').onclick=$('camX').onclick=sairCamera;
+$('camMin').onclick=()=>camModo('on mini');
+$('camTam').onclick=()=>camModo($('camBox').className==='on mini'?'on':'on mini');
+// tocar fora da janela grande so minimiza (a camera continua ligada)
+$('camBox').addEventListener('click',e=>{if(e.target===$('camBox'))camModo('on mini')});
+// minimizada: arrasta pelo video; um toque sem arrastar volta para a janela grande
+(()=>{
+  let ini=null;
+  const img=$('camImg'),box=$('camBox');
+  img.addEventListener('pointerdown',e=>{
+    if(box.className!=='on mini')return;
+    const r=box.getBoundingClientRect();
+    ini={x:e.clientX,y:e.clientY,l:r.left,t:r.top,moveu:false};
+    img.setPointerCapture(e.pointerId);
+  });
+  img.addEventListener('pointermove',e=>{
+    if(!ini)return;
+    const dx=e.clientX-ini.x,dy=e.clientY-ini.y;
+    if(Math.abs(dx)+Math.abs(dy)>6)ini.moveu=true;
+    if(!ini.moveu)return;
+    const w=box.offsetWidth,h=box.offsetHeight;
+    box.style.right=box.style.bottom='auto';
+    box.style.left=Math.max(4,Math.min(innerWidth-w-4,ini.l+dx))+'px';
+    box.style.top=Math.max(4,Math.min(innerHeight-h-4,ini.t+dy))+'px';
+  });
+  img.addEventListener('pointerup',()=>{if(ini&&!ini.moveu)camModo('on');ini=null});
+})();
+function fn(name,description,props,required){
+  return {type:'function',function:{name,description,parameters:{type:'object',properties:props||{},required:required||[]}}};
+}
+const TOOLS=[
+ fn('get_time','Hora e data atuais. Use sempre que perguntarem a hora ou o dia.'),
+ fn('get_weather','Temperatura, umidade e condição do tempo agora na cidade do Zeus.'),
+ fn('get_crypto','Cotação atual de uma criptomoeda em reais, com variação de 24h.',
+    {coin:{type:'string',description:'id da CoinGecko em minúsculas: bitcoin, ethereum, solana, dogecoin...'}},['coin']),
+ fn('set_expression','Muda a cara do Zeus. Use quando pedirem uma expressão (sorria, fica bravo...).',
+    {mood:{type:'string',enum:['neutro','feliz','triste','bravo','sono','curioso','surpreso']}},['mood']),
+ fn('take_photo','Tira uma foto com a câmera do celular: abre a câmera, a pessoa aponta e aperta o botão. '+
+    'A foto vai para o notebook e fica pronta para postar no Instagram.'),
+ fn('insta_draft','Prepara uma publicação no Instagram do notebook com a ÚLTIMA foto e a legenda, SEM '+
+    'publicar. Depois leia a legenda e pergunte se pode publicar.',
+    {legenda:{type:'string',description:'a legenda exata (pode ser vazia)'}},['legenda']),
+ fn('insta_send','Publica no Instagram o rascunho preparado. Só depois que o usuário confirmar ("pode postar").',
+    {draft_id:{type:'string',description:'o draft_id devolvido por insta_draft'}},['draft_id']),
+ fn('insta_cancel','Descarta a publicação preparada no Instagram.'),
+ fn('pc_open','Abre um app ou site no notebook Windows. Apps: whatsapp, vscode, chrome, explorador, '+
+    'calculadora, bloco_de_notas, configuracoes, spotify. Sites: agenda, gmail, drive, youtube, github, maps, '+
+    'instagram (abre na janela do Chrome do Zeus, a que posta).',
+    {target:{type:'string',enum:PC_ALVOS}},['target']),
+ fn('pc_search','Pesquisa no Google ou no YouTube, abrindo o resultado no notebook.',
+    {site:{type:'string',enum:['google','youtube']},query:{type:'string',description:'o que pesquisar'}},['site','query']),
+ fn('pc_close','Fecha algo no notebook (fechar, encerrar, desligar, sair). Abas do navegador: youtube, '+
+    'instagram, gmail, agenda, drive, github, maps, xadrez. Apps: whatsapp, calculadora, bloco_de_notas, spotify, chrome, firefox, explorador, '+
+    'configuracoes. webcam desliga a câmera.',
+    {target:{type:'string',enum:PC_FECHAR}},['target']),
+ fn('webcam','Liga ou desliga a webcam do notebook. Ligada, a imagem da câmera aparece ao vivo no app.',
+    {acao:{type:'string',enum:['ligar','desligar']}},['acao']),
+ fn('wa_draft','Escreve uma mensagem no chat aberto do WhatsApp do notebook, SEM enviar. '+
+    'Depois leia o texto e pergunte se pode enviar.',{text:{type:'string',description:'a mensagem exata'}},['text']),
+ fn('wa_send','Envia o rascunho do WhatsApp. Só depois que o usuário confirmar ("pode enviar").',
+    {draft_id:{type:'string',description:'o draft_id devolvido por wa_draft'}},['draft_id']),
+ fn('wa_cancel','Apaga o rascunho do WhatsApp.'),
+ fn('find_image','Procura fotos de uso livre para a página web. Use só a url devolvida.',
+    {query:{type:'string',description:'o que procurar, em inglês'}},['query']),
+ fn('page_read','Lê o HTML atual da página web que você está criando. Chame antes de alterar.'),
+ fn('page_write','Grava a página HTML inteira (substitui tudo). Chrome e VS Code atualizam sozinhos.',
+    {html:{type:'string',description:'documento HTML completo, com o CSS dentro de <style>'}},['html']),
+ fn('page_open','Abre a página no VS Code (código) ou no Chrome (resultado).',
+    {where:{type:'string',enum:['vscode','chrome']}},['where']),
+ fn('chess_new','Começa uma partida de xadrez contra o motor do notebook.',
+    {cor:{type:'string',enum:['brancas','pretas'],description:'a cor do USUÁRIO; padrão brancas'},
+     nivel:{type:'number',description:'força do Zeus de 1 a 10; padrão 3'}}),
+ fn('chess_move','Joga o lance do usuário e devolve o lance do Zeus, escolhido pelo motor.',
+    {lance:{type:'string',description:'lance em notação inglesa: e4, Nf3, Bxc4, O-O, e8=Q, ou e2e4. '+
+      'cavalo=N, bispo=B, torre=R, dama=Q, rei=K, peão sem letra'}},['lance']),
+ fn('chess_state','Posição atual da partida e os lances legais.'),
+ fn('chess_open_pc','Abre o tabuleiro da partida no Chrome do notebook.'),
+ fn('chess_end','Encerra a partida de xadrez em andamento (parar, sair, desistir, chega de xadrez).')
+];
+
+function moneyBR(v){return 'R$ '+Math.round(v).toLocaleString('pt-BR')}
+async function runFn(name,a){
+ a=a||{};
+ if(name==='get_time'){
+   const d=new Date();
+   const hora=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+   esp('/show?t='+encodeURIComponent(hora)+'&m=0');
+   return {hora,data:d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})};
+ }
+ if(name==='get_weather'){
+   const r=await(await fetchPrazo('https://api.open-meteo.com/v1/forecast?latitude='+cfg.lat+
+     '&longitude='+cfg.lon+'&current=temperature_2m,relative_humidity_2m,weather_code',null,12000)).json();
+   const c=r.current;
+   esp('/show?t='+encodeURIComponent(Math.round(c.temperature_2m)+' graus')+'&m=5');
+   return {cidade:cfg.city,temperatura_c:c.temperature_2m,umidade_pct:c.relative_humidity_2m,
+           condicao:WX[c.weather_code]||('código '+c.weather_code)};
+ }
+ if(name==='get_crypto'){
+   const id=String(a.coin||'bitcoin').toLowerCase().trim();
+   const r=await(await fetchPrazo('https://api.coingecko.com/api/v3/simple/price?ids='+
+     encodeURIComponent(id)+'&vs_currencies=brl&include_24hr_change=true',null,12000)).json();
+   if(!r[id])return {erro:'moeda não encontrada: '+id};
+   const v=+(r[id].brl_24h_change||0).toFixed(2);
+   // o display mostra o valor sem depender do modelo lembrar: subiu = feliz, caiu = triste
+   esp('/show?t='+encodeURIComponent(id.slice(0,7).toUpperCase()+' '+moneyBR(r[id].brl))+'&m='+(v>=0?1:2));
+   return {moeda:id,preco_brl:r[id].brl,variacao_24h_pct:v};
+ }
+ if(name==='set_expression'){
+   const m=Math.max(0,MOODS.indexOf(a.mood||'feliz'));
+   esp('/mood?m='+m+'&hold=6000');
+   return {ok:true,expressao:a.mood};
+ }
+ if(name==='pc_open')return await ponte('/open?t='+encodeURIComponent(a.target||''));
+ if(name==='pc_search')
+   return await ponte('/search?site='+encodeURIComponent(a.site||'')+'&q='+encodeURIComponent(a.query||''));
+ if(name==='webcam'){
+   // o que a pessoa falou manda mais que o modelo: "desliga/fecha/apaga" nunca vira ligar
+   const u=semAcento(lastUserText).toLowerCase();
+   let acao=a.acao||'ligar';
+   if(/\b(deslig\w*|fech\w*|apag\w*|encerr\w*|par[ae]\b)/.test(u))acao='desligar';
+   else if(/\b(lig\w*|abr\w*|ativ\w*|acend\w*)/.test(u))acao='ligar';
+   const r=await ponte('/webcam?a='+encodeURIComponent(acao));
+   if(!r.erro)mostrarCamera(r.camera);
+   return r;
+ }
+ if(name==='find_image'){
+   const qq=String(a.query||'').trim();
+   if(!qq)return {erro:'diga o que procurar'};
+   try{
+     const r=await(await fetchPrazo('https://api.openverse.org/v1/images/?q='+encodeURIComponent(qq)+
+       '&page_size=3&license_type=commercial&mature=false',null,12000)).json();
+     const fotos=(r.results||[]).map(x=>({url:x.url,titulo:x.title,autor:x.creator,licenca:x.license}));
+     return fotos.length?{fotos}:{erro:'não achei foto de '+qq};
+   }catch(e){return {erro:'busca de imagens indisponível agora'}}
+ }
+ if(name==='page_read')return await ponte('/page/read');
+ if(name==='page_write')return await ponte('/page/write',{html:a.html||''});
+ if(name==='page_open')return await ponte('/page/open?where='+encodeURIComponent(a.where||''));
+ if(name==='wa_draft'){
+   const r=await ponte('/wa/draft',{text:a.text||''});
+   if(r.ok){waDraftAt=Date.now();pendente.wa={id:r.draft_id,texto:a.text||''}}
+   return r;
+ }
+ if(name==='wa_send'){
+   if(lastUserAt<=waDraftAt)
+     return {erro:'bloqueado: o usuário ainda não confirmou. Leia o rascunho e pergunte se pode enviar.'};
+   if(!WA_SIM.test(lastUserText)||WA_NAO.test(lastUserText))
+     return {erro:'bloqueado: a última fala do usuário não foi uma confirmação clara. Pergunte de novo.'};
+   const r=await ponte('/wa/send',{draft_id:a.draft_id||(pendente.wa&&pendente.wa.id)||''});
+   if(r.ok){waDraftAt=Date.now();pendente.wa=null}   // o proximo envio precisa de nova confirmacao
+   return r;
+ }
+ if(name==='wa_cancel'){
+   // sem rascunho, nao mexe no WhatsApp (o cancelamento apaga o que estiver digitado la)
+   if(!pendente.wa)return {ok:true,nada:'não havia rascunho do WhatsApp'};
+   pendente.wa=null;
+   return await ponte('/wa/cancel',{});
+ }
+ if(name==='chess_new'||name==='chess_move'||name==='chess_state'){
+   const s=name==='chess_new'?await ponte('/chess/new',{cor:a.cor||'brancas',nivel:+a.nivel||3})
+          :name==='chess_move'?await ponte('/chess/move',{lance:a.lance||''})
+          :await ponte('/chess/state');
+   showBoard(s);
+   if(s.casas){const o=Object.assign({},s);delete o.casas;delete o.fen;return o}   // o modelo nao precisa das 64 casas
+   return s;
+ }
+ if(name==='chess_open_pc')return await ponte('/chess/open');
+ if(name==='take_photo')return await tirarFoto();
+ if(name==='insta_draft'){
+   const r=await ponte('/insta/draft',{legenda:a.legenda||''});
+   if(r.ok){instaDraftAt=Date.now();pendente.insta={id:r.draft_id,legenda:a.legenda||''}}
+   return r;
+ }
+ if(name==='insta_send'){
+   if(lastUserAt<=instaDraftAt)
+     return {erro:'bloqueado: o usuário ainda não confirmou. Leia a legenda e pergunte se pode publicar.'};
+   if(!INSTA_SIM.test(lastUserText)||WA_NAO.test(lastUserText))
+     return {erro:'bloqueado: a última fala do usuário não foi uma confirmação clara. Pergunte de novo.'};
+   const r=await ponte('/insta/send',{draft_id:a.draft_id||(pendente.insta&&pendente.insta.id)||''});
+   if(r.ok){instaDraftAt=Date.now();pendente.insta=null;limparFoto()}   // a proxima precisa de nova confirmacao
+   return r;
+ }
+ if(name==='insta_cancel'){
+   if(!pendente.insta)return {ok:true,nada:'não havia publicação do Instagram esperando'};
+   pendente.insta=null;
+   return await ponte('/insta/cancel',{});
+ }
+ if(name==='chess_end'){
+   const s=await ponte('/chess/end',{});
+   if(!s.erro){xs=null;$('xadrez').style.display='none';esp('/board?off=1')}
+   return s.erro?s:{ok:true,partida:'encerrada'};
+ }
+ if(name==='pc_close'){
+   const r=await ponte('/close?t='+encodeURIComponent(a.target||''));
+   if(a.target==='webcam'&&!r.erro)mostrarCamera(false);
+   if(a.target==='instagram')pendente.insta=null;      // o post que esperava confirmacao foi junto
+   return r;
+ }
+ return {erro:'função desconhecida: '+name};
+}
+
+// ================= CEREBRO: Ollama no notebook =================
+// A pagina guarda a conversa, a ponte repassa ao Ollama (llama3.1:8b) e devolve um passo:
+// ou uma resposta para falar, ou funcoes para executar aqui e mandar o resultado de volta.
+// o que esta esperando confirmacao vai escrito no prompt: um modelo de 8B se perde sem isso
+const pendente={wa:null,insta:null};
+function pendencias(){
+  let p='';
+  if(pendente.insta)p+=' AGORA há uma publicação do Instagram esperando confirmação (draft_id '+pendente.insta.id+
+    ', legenda "'+pendente.insta.legenda+'"): se a pessoa confirmar, chame insta_send com esse draft_id; se negar '+
+    'ou pedir para esperar, chame insta_cancel.';
+  if(pendente.wa)p+=' AGORA há um rascunho do WhatsApp esperando confirmação (draft_id '+pendente.wa.id+
+    '): se a pessoa confirmar, chame wa_send; se negar, wa_cancel.';
+  return p;
+}
+const PERSONA=()=>' Você é o Zeus, um robozinho de bancada curioso, simpático e bem-humorado, que mora em '+
+  cfg.city+'. Responda SEMPRE em português do Brasil, curto e natural: uma ou duas frases, porque sua resposta '+
+  'vira voz. Nada de listas, markdown ou emoji. Cumprimentos e bate-papo (oi, bom dia, boa noite, tudo bem, '+
+  'obrigado, quem é você) são só conversa: responda como um amigo, sem falar hora, clima ou números. '+
+  'Se a fala parecer cortada ou não fizer sentido, peça para a pessoa repetir. ';
+function prompt(comFuncoes){
+ if(!comFuncoes)return pendencias()+PERSONA()+'Converse normalmente sobre qualquer assunto. Você não tem a hora, '+
+  'o clima nem cotações nesta fala: nunca invente horário, data, temperatura, preço ou número; se a pessoa quiser '+
+  'isso, diga que é só pedir, por exemplo "Zeus, que horas são?". ';
+ return pendencias()+PERSONA()+
+  'Só chame uma função quando a pessoa pedir claramente aquilo; na dúvida, converse. '+
+  'Hora, clima e criptomoeda: chame a função e use só o número que ela devolver; nunca invente números. '+
+  'Fale valores arredondados, fáceis de ouvir. '+
+  'Você controla o notebook Windows do usuário: para abrir app ou site use pc_open, para pesquisar use '+
+  'pc_search, para ligar ou desligar a webcam ou câmera use webcam (ligada, a imagem aparece no app), '+
+  'para FECHAR uma aba (YouTube, Gmail...) ou um app use pc_close. Confirme em poucas palavras; se a '+
+  'função devolver erro, explique o erro. '+
+  'WhatsApp: para mandar mensagem chame wa_draft; depois responda exatamente no formato '+
+  '"Escrevi: <o texto>. Posso enviar?". Só chame wa_send quando a pessoa confirmar na fala seguinte. '+
+  'Se ela desistir, wa_cancel. '+
+  'Página web: para criar, chame page_write com um HTML completo e simples (só o que foi pedido) e '+
+  'depois page_open vscode. Para alterar, chame page_read, mude só o que foi pedido e chame page_write '+
+  'com o HTML inteiro. Fotos só com url de find_image. Nunca leia código em voz alta. '+
+  'Xadrez: para jogar chame chess_new (padrão: a pessoa de brancas, nível 3). Quando a pessoa disser um '+
+  'lance, converta para notação inglesa e chame chess_move: cavalo=N, bispo=B, torre=R, dama ou '+
+  'rainha=Q, rei=K, peão sem letra, roque pequeno O-O, roque grande O-O-O. Quem escolhe o SEU lance é '+
+  'o motor: nunca invente lance. Depois de chess_move responda numa frase só com o seu lance, usando '+
+  'zeus.descricao (ex.: "Joguei peão de c7 para c6."); se fim for true, diga o resultado. '+
+  'Para encerrar, parar ou sair do xadrez, chame chess_end. '+
+  'Instagram: "abre o Instagram" é pc_open instagram. Para foto, diga "aponte o celular e aperte o botão" e '+
+  'chame take_photo; quando a foto chegar, responda "Foto pronta! Quer postar no Instagram? Qual a legenda?". '+
+  'Para postar, chame insta_draft com a legenda pedida (usa a última foto) e responda '+
+  'no formato "Vou postar com a legenda: <legenda>. Posso publicar?". Só chame insta_send quando a pessoa '+
+  'confirmar na fala seguinte; se ela desistir, insta_cancel. Nunca publique sem confirmação. '+
+  'Se pedirem uma cara (sorria, fica bravo), chame set_expression.';
+}
+// ---- contra alucinacao: o modelo de 8B com todas as funcoes na mao chamava funcao para tudo
+// ("Zeus, boa noite" virava get_time). Cada fala so leva as funcoes do assunto dela; sem
+// palavra de comando, vai sem funcao nenhuma e o Zeus apenas conversa.
+const GRUPOS=[
+ [/\b(horas?|horario|que dia|dia (de )?hoje|hoje e dia|que data|data de hoje|dia da semana|dia do mes|calendario)\b/,['get_time']],
+ [/\b(temperatura|clima|graus|previsao|chuva|chove\w*|chover|calor|frio|umidade|tempo (la fora|hoje|agora|ai|em))\b/,['get_weather']],
+ [/\b(bitcoin|btc|ethereum|eth|solana|dogecoin|doge|cripto\w*|cotac\w*|litecoin|cardano|xrp|ripple|binance|tether|moedas?)\b/,['get_crypto']],
+ [/\b(sorri\w*|feliz|triste|brav[oa]|zangad\w*|com sono|sonolent\w*|curios[oa]|surpres[oa]|cara de|careta|carinha|expressao)\b/,['set_expression']],
+ [/\b(abr[aei]\w*|abrir|pesquis\w*|procur\w*|busca\w*|fech\w*|encerr\w*|deslig\w*|lig[aeu]\w*|toca\w*|youtube|google|gmail|agenda|drive|github|maps|mapa|whats\w*|vs ?code|chrome|explorador|calculadora|bloco de notas|configurac\w*|spotify|firefox|aba|janela|instagram)\b/,['pc_open','pc_search','pc_close']],
+ [/\b(webcam|camera)\b/,['webcam','pc_close']],
+ [/\b(whats\w*|zap|mensagem|manda\w*|envi\w*)\b/,['wa_draft','wa_send','wa_cancel']],
+ [/\b(foto\w*|instagram|insta|post\w*|publica\w*|legenda)\b/,['take_photo','insta_draft','insta_send','insta_cancel','pc_open']],
+ [/\b(pagina|site|html)\b/,['page_read','page_write','page_open','find_image']],
+ [/\b(xadrez|partida|tabuleiro|lance|roque|xeque|jog\w*|cavalo|bispo|torre|dama|rainha|peao)\b/,['chess_new','chess_move','chess_state','chess_open_pc','chess_end']],
+];
+const EDITA_PAGINA=/\b(troc\w*|mud\w*|coloc\w*|aument\w*|diminu\w*|tir\w*|remov\w*|adicion\w*|poe|bota\w*|deix\w*|cor|fundo|titulo|fonte|texto|imagem|botao)\b/;
+let paginaAt=0,fotoAt=0;
+function ferramentasPara(t){
+  const s=semAcento(String(t||'')).toLowerCase(),nomes=new Set();
+  for(const [re,ns] of GRUPOS)if(re.test(s))ns.forEach(n=>nomes.add(n));
+  if(pendente.wa)['wa_send','wa_cancel'].forEach(n=>nomes.add(n));
+  if(pendente.insta)['insta_send','insta_cancel'].forEach(n=>nomes.add(n));
+  if(fotoAt&&Date.now()-fotoAt<600000)nomes.add('insta_draft');          // a legenda vem logo depois da foto
+  if(xs&&xs.ativa)['chess_move','chess_state','chess_end','chess_open_pc'].forEach(n=>nomes.add(n));
+  if(paginaAt&&Date.now()-paginaAt<900000&&EDITA_PAGINA.test(s))
+    ['page_read','page_write','page_open','find_image'].forEach(n=>nomes.add(n));
+  return TOOLS.filter(x=>nomes.has(x.function.name));
+}
+// Xadrez: a frase sai do resultado do motor, nao do modelo (ele ja trocou "peao de d7 para d5"
+// por "d2 para d4"). Devolve null quando o modelo deve responder (erro, outras funcoes).
+function respostaPronta(nome,out){
+  if(!out||out.erro)return null;
+  const fimTxt=out.fim?' '+out.resultado.charAt(0).toUpperCase()+out.resultado.slice(1)+'.':'';
+  const xeque=!out.fim&&out.xeque?' Xeque!':'';
+  if(nome==='chess_move'){
+    if(out.zeus)return 'Joguei '+out.zeus.descricao+'.'+xeque+fimTxt;
+    return out.fim?'Fim de jogo!'+fimTxt:null;
+  }
+  if(nome==='chess_new'){
+    const ini='Partida nova! Você joga de '+out.voce_joga+', nível '+out.nivel+'.';
+    return out.zeus?ini+' Comecei: '+out.zeus.descricao+'. Sua vez.':ini+' Sua vez.';
+  }
+  if(nome==='chess_end')return 'Partida encerrada. Quando quiser, é só chamar para jogar de novo.';
+  return null;
+}
+// resposta que e uma chamada de funcao escrita como texto (o llama3.1 as vezes faz isso)
+function pareceFuncao(t){return /^\s*[\[{]?\s*\{?\s*"(name|function)"\s*:/.test(t||'')||/<\|?python_tag|\bfunction_call\b/.test(t||'')}
+let hist=[];
+// so as ultimas mensagens, comecando sempre por uma fala do usuario (nunca por um resultado de funcao solto)
+function aparar(hs){
+  let h2=hs.slice(-16);
+  while(h2.length&&h2[0].role!=='user')h2=h2.slice(1);
+  return h2;
+}
+function limparFala(t){
+  return String(t||'').replace(/[*_#`>|]/g,'').replace(/\p{Extended_Pictographic}/gu,'').replace(/\s+/g,' ').trim();
+}
+// ---- contra travamento: cada pedido tem um numero (geracao). Se ele demorar demais, um pedido
+// novo assume, e o resultado atrasado do velho e jogado fora (nao fala, nao mexe no historico).
+let ocupado=false,ocupadoDesde=0,geracao=0;
+const ASSUME_APOS_MS=45000;           // pensando ha mais que isso: um comando novo passa na frente
+const DESTRAVA_APOS_MS=240000;        // ninguem falou nada: destrava sozinho
+function prazoFuncao(nome){
+  return nome==='take_photo'?200000:/^insta_/.test(nome)?160000:/^page_/.test(nome)?70000:30000;
+}
+function comPrazo(p,ms,msg){
+  let t;
+  return Promise.race([p,new Promise((_,rej)=>{t=setTimeout(()=>rej(new Error(msg)),ms)})]).finally(()=>clearTimeout(t));
+}
+function destravar(motivo){
+  geracao++;ocupado=false;
+  console.warn('[zeus] destravado:',motivo);
+  esp('/mood?m=0');
+  if(motivo)status(motivo);
+  ouvirDeNovo(300);
+}
+setInterval(()=>{if(ocupado&&Date.now()-ocupadoDesde>DESTRAVA_APOS_MS)
+  destravar('demorei demais nessa; pode pedir de novo')},5000);
+document.addEventListener('visibilitychange',()=>{     // voltou para o app depois de um tempo fora
+  if(document.visibilityState==='visible'&&ocupado&&Date.now()-ocupadoDesde>ASSUME_APOS_MS)destravar('');
+});
+async function processar(t){
+  t=(t||'').trim();
+  if(!t)return;
+  if(ocupado){
+    if(Date.now()-ocupadoDesde<ASSUME_APOS_MS)return;
+    destravar('');                                       // o pedido anterior travou: este assume
+  }
+  if(!await loadCfg()){status('não consegui ler a configuração do Zeus');return}
+  if(!sessao)abrirSessao();
+  const g=++geracao;
+  ocupado=true;ocupadoDesde=Date.now();pararEscuta();clearTimeout(sessT);
+  status('“'+t+'”');
+  lastUserAt=Date.now();lastUserText=t;
+  esp('/mood?m=7&w=1');                                  // pensando
+  hist.push({role:'user',content:t});
+  let fala='';
+  let tools=ferramentasPara(t);
+  console.log('[funcoes liberadas]',tools.map(x=>x.function.name).join(',')||'nenhuma: conversa');
+  try{
+    for(let passo=0;passo<6&&!fala;passo++){
+      const r=await ponte('/llm',{messages:[{role:'system',content:prompt(tools.length>0)}].concat(aparar(hist)),
+                                  tools:tools.length?tools:undefined});
+      if(g!==geracao)return;                             // outro pedido assumiu
+      if(r.erro){fala='Desculpe, '+r.erro;break}
+      const m=r.message||{},calls=m.tool_calls||[];
+      const liberadas=new Set(tools.map(x=>x.function.name));
+      if(calls.some(c=>!liberadas.has((c.function||{}).name))||(!calls.length&&pareceFuncao(m.content))){
+        console.warn('[alucinacao] o modelo quis uma funcao que nao foi pedida:',calls.length?calls:m.content);
+        tools=[];continue;                               // pergunta de novo, so para conversar
+      }
+      if(calls.length){
+        hist.push({role:'assistant',content:m.content||'',tool_calls:calls});
+        for(const c of calls){
+          const f=c.function||{};let args=f.arguments||{};
+          if(typeof args==='string'){try{args=JSON.parse(args)}catch(e){args={}}}
+          let out;
+          try{out=await comPrazo(runFn(f.name,args),prazoFuncao(f.name),'a função '+f.name+' demorou demais')}
+          catch(err){out={erro:String(err.message||err)}}
+          if(g!==geracao)return;
+          console.log('[funcao]',f.name,args,out);
+          if(out&&!out.erro){if(f.name==='take_photo')fotoAt=Date.now();if(f.name==='page_write')paginaAt=Date.now();
+                             if(f.name==='insta_send'||f.name==='insta_cancel')fotoAt=0}
+          hist.push({role:'tool',tool_name:f.name,content:JSON.stringify(out)});
+          const pronta=calls.length===1&&respostaPronta(f.name,out);
+          if(pronta){fala=pronta;hist.push({role:'assistant',content:fala})}
+        }
+        continue;
+      }
+      fala=limparFala(m.content);
+      if(fala)hist.push({role:'assistant',content:fala});
+    }
+  }catch(e){
+    if(g!==geracao)return;
+    fala='Desculpe, algo deu errado: '+(e.message||e);
+  }finally{if(g===geracao)ocupado=false}
+  if(g!==geracao)return;
+  if(!fala)fala='Pronto.';
+  status(fala);esp('/spk');
+  await falar(fala);
+  tocarSessao();
+}
+
+// ================= FALA: voz do proprio Android =================
+// Dentro do app Zeus (Android), window.ZeusAndroid da a voz e o reconhecimento nativos.
+const NATIVO=!!window.ZeusAndroid;
+let vozPt=null,falando=false,falaSeq=0;
+const falasNativas={};
+window.__zeusTTS=id=>{const f=falasNativas[id];delete falasNativas[id];if(f)f()};
+// o app avisa cada palavra que a voz comeca a falar: a boca no OLED abre junto
+let ultPalavra=0;
+window.__zeusPalavra=()=>{const n=Date.now();if(n-ultPalavra>110){ultPalavra=n;esp('/talk?on=1&p=1')}};
+// A voz sai no alto-falante do notebook (Piper, na ponte) por padrao; em Ajustes da para
+// voltar para o celular. Se o notebook nao falar (ponte fora, voz nao instalada), fala no celular.
+function saidaVoz(){return lsGet('saida')||'notebook'}
+function calarVoz(){
+  if(saidaVoz()==='notebook')ponte('/voz/calar',{});
+  if(NATIVO)ZeusAndroid.calar();else if('speechSynthesis' in window)speechSynthesis.cancel();
+}
+async function falar(texto){
+  const t=limparFala(texto);
+  if(!t)return;
+  if(saidaVoz()==='notebook'){
+    falando=true;pararEscuta();                  // a boca do robo e a ponte que mexe, palavra a palavra
+    const r=await ponte('/falar',{texto:t});
+    falando=false;
+    if(!r.erro){ouvirDeNovo(600);return}         // espera o eco do alto-falante sumir antes de ouvir
+    // ocupada: o notebook esta falando para outro aparelho (varias partidas): fala aqui, sem fila
+    console.warn('[voz] o notebook não falou, vai no celular:',r.erro);
+  }
+  return falarCelular(t);
+}
+function escolherVoz(){
+  const vs=speechSynthesis.getVoices(),pt=vs.filter(v=>/^pt[-_]BR/i.test(v.lang));
+  vozPt=pt.find(v=>/google/i.test(v.name))||pt[0]||vs.find(v=>/^pt/i.test(v.lang))||null;
+}
+if(!NATIVO&&'speechSynthesis' in window){escolherVoz();speechSynthesis.onvoiceschanged=escolherVoz}
+function falarCelular(texto){
+  return new Promise(res=>{
+    const t=limparFala(texto);
+    if(!t){res();return}
+    if(NATIVO){
+      falando=true;pararEscuta();esp('/talk?on=1');
+      const ping=setInterval(()=>esp('/talk?on=1'),1000);
+      const id='f'+(++falaSeq);let acabou=false;
+      const fim=()=>{if(acabou)return;acabou=true;delete falasNativas[id];clearInterval(ping);falando=false;
+                     esp('/talk?on=0');res();ouvirDeNovo(500)};
+      falasNativas[id]=fim;
+      ZeusAndroid.falar(id,t);
+      setTimeout(fim,5000+t.length*110);                      // se o Android nao avisar o fim
+      return;
+    }
+    if(!('speechSynthesis' in window)){res();return}
+    // o Chrome corta falas longas: uma frase por vez
+    const partes=(t.match(/[^.!?]+[.!?]*/g)||[t]).map(p=>p.trim()).filter(Boolean);
+    speechSynthesis.cancel();
+    falando=true;pararEscuta();esp('/talk?on=1');
+    const ping=setInterval(()=>esp('/talk?on=1'),1000);   // olhos "respiram" enquanto fala
+    let n=0,acabou=false;
+    const fim=()=>{if(acabou)return;acabou=true;clearInterval(ping);falando=false;esp('/talk?on=0');
+                   res();ouvirDeNovo(500)};                   // espera a propria voz sumir antes de ouvir
+    for(const p of partes){
+      const u=new SpeechSynthesisUtterance(p);u.lang='pt-BR';u.rate=1.05;if(vozPt)u.voice=vozPt;
+      u.onend=u.onerror=()=>{if(++n>=partes.length)fim()};
+      speechSynthesis.speak(u);
+    }
+    setTimeout(fim,5000+t.length*110);                        // se o Android nao avisar o fim
+  });
+}
+
+// ================= OUVIR: reconhecimento de voz do Chrome =================
+// Gratis e sem chave. Duas formas de abrir a conversa: o botao CONVERSAR ou, no
+// modo Alexa, dizer o nome ("Zeus, que horas sao?"). Depois de uns segundos de
+// silencio a conversa fecha (no modo Alexa, volta a esperar o nome).
+// No app Android, um "SpeechRecognition" de mentira repassa ao SpeechRecognizer nativo.
+// O nativo para a cada frase; o onend abaixo ja reinicia, como no Chrome.
+class SRNativo{
+  constructor(){this.lang='pt-BR';this.continuous=true;this.interimResults=true;
+                this.onresult=this.onerror=this.onend=null;this.id=0}
+  start(){SRNativo.atual=this;this.id=ZeusAndroid.ouvir()}
+  abort(){if(SRNativo.atual===this){SRNativo.atual=null;ZeusAndroid.pararOuvir()}}
+  stop(){this.abort()}
+}
+window.__zeusSR=(id,ev,d)=>{
+  const r=SRNativo.atual;
+  if(!r||r.id!==id)return;                               // evento de uma escuta antiga
+  if(ev==='parcial'||ev==='final'){
+    const alts=String(d||'').split('\n').filter(Boolean);     // o app manda as alternativas, uma por linha
+    const res={isFinal:ev==='final',length:alts.length||1,0:{transcript:alts[0]||''}};
+    alts.forEach((a,k)=>{res[k]={transcript:a}});
+    if(r.onresult)r.onresult({resultIndex:0,results:[res]});
+  }else if(ev==='erro'){if(r.onerror)r.onerror({error:d})}
+  else if(ev==='fim'){SRNativo.atual=null;if(r.onend)r.onend()}
+};
+const SR=NATIVO?SRNativo:(window.SpeechRecognition||window.webkitSpeechRecognition);
+let rec=null,recT=null,sessao=false,sessT=null,wakeOn=false,wakeLock=null,ouvindoFala=false;
+function wakeWord(){return lsGet('wake')||'zeus'}
+function wakeRegex(){
+  const w=wakeWord().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,'');
+  // "zeus" tambem chega como "zeuz" ou "zéus"
+  const alt=w==='zeus'?'zeus|zeuz':w;
+  // so um grupo de captura: o pedido que vem depois do nome
+  return new RegExp('(?:^|\\s)(?:'+alt+')(?:\\s|[,.!?]|$)[\\s,.!?]*(.*)','i');
+}
+// O Google em portugues costuma escrever "Zeus" como "Deus" ou "seus". Essas so valem no
+// COMECO da frase (opcionalmente depois de oi/ei/ok), para "os seus olhos" nao acordar o robo.
+function wakeInicio(){
+  if(wakeWord()!=='zeus')return null;
+  return /^\s*(?:(?:oi|ei|ok|ola|hey|e ai)[\s,]+)?(?:deus|seus|zeu|zeuss)(?:\s|[,.!?]|$)[\s,.!?]*(.*)$/i;
+}
+// devolve o pedido que veio depois do nome ('' se so chamou), ou null se nao chamou o Zeus
+function acharPedido(raw){
+  const s=semAcento(raw);
+  const m=s.match(wakeRegex())||(wakeInicio()&&s.match(wakeInicio()));
+  if(!m)return null;
+  return raw.slice(raw.length-m[1].length).trim();    // recorta do original (com acento)
+}
+function semAcento(s){return s.normalize('NFD').replace(/[̀-ͯ]/g,'')}
+// entre as alternativas do reconhecedor, fica com a que chamou o Zeus (senao, a melhor):
+// o Google as vezes poe "viu que horas" em 1o e "Zeus que horas" em 2o
+function escolherAlt(r){
+  for(let k=0;k<(r.length||1);k++){const a=r[k]&&r[k].transcript;if(a&&acharPedido(a)!==null)return a}
+  return (r[0]&&r[0].transcript)||'';
+}
+// barulho que o reconhecedor transforma em "palavra": nao vai para o cerebro
+const ENCHIMENTO=/^(h+m+|hum+|ah+|eh+|oh+|e|o|a|ta|ok|uhum|aham|n|s)$/;
+function soBarulho(t){return ENCHIMENTO.test(semAcento(t).toLowerCase().replace(/[^a-z ]/g,'').trim())}
+function ouvir(){
+  if(!SR||rec||falando||ocupado||!(sessao||wakeOn))return;
+  rec=new SR();rec.lang='pt-BR';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=5;
+  rec.onresult=e=>{
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const r=e.results[i],raw=escolherAlt(r);
+      if(sessao){
+        if(!r.isFinal){if(!ouvindoFala){ouvindoFala=true;esp('/mood?m=5&w=1');clearTimeout(sessT)}continue}
+        ouvindoFala=false;
+        if(soBarulho(raw)){console.log('[barulho ignorado]',raw);tocarSessao();continue}
+        // "Deus, vamos jogar xadrez" no meio da conversa: o nome nao vai para o cerebro
+        const ped=acharPedido(raw);
+        if(raw.trim()){pararEscuta();processar(ped?ped:raw);return}
+        continue;
+      }
+      const cmd=acharPedido(raw);
+      if(cmd===null){
+        // mostra o que entendeu: sem isso, uma frase sem o nome parecia "comando falhou"
+        if(r.isFinal&&raw.trim()){console.log('[ouvi sem o nome]',raw);
+          status('ouvi: “'+raw.trim()+'” — comece com "'+wakeWord()+'", ou toque em CONVERSAR')}
+        continue;
+      }
+      esp('/mood?m=5&w=1');                           // ouviu o nome: cara de curioso
+      if(!r.isFinal)return;                           // espera o resto da frase
+      pararEscuta();abrirSessao();
+      if(cmd)processar(cmd);else falar('Oi! Pode falar.').then(tocarSessao);
+      return;
+    }
+  };
+  rec.onerror=ev=>{
+    if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){
+      setWake(false);fecharSessao();
+      if(NATIVO)status('permita o microfone para o app Zeus (Configurações > Apps > Zeus > Permissões)');
+      else if(!navigator.mediaDevices?.getUserMedia)semMicSeguro();
+      else status('o Chrome não liberou o microfone para o reconhecimento de voz');
+    }
+  };
+  rec.onend=()=>{rec=null;ouvindoFala=false;ouvirDeNovo(300)};   // o Android encerra sozinho
+  try{rec.start()}catch(e){rec=null}
+}
+function ouvirDeNovo(ms){clearTimeout(recT);recT=setTimeout(ouvir,ms)}
+function pararEscuta(){
+  clearTimeout(recT);
+  const r=rec;rec=null;
+  if(r){r.onend=null;try{r.abort()}catch(e){}}
+}
+function silencioMs(){return wakeOn?20000:45000}
+function abrirSessao(){
+  sessao=true;hist=[];
+  conv.textContent='ENCERRAR';conv.style.background='var(--verm)';
+}
+function tocarSessao(){
+  clearTimeout(sessT);
+  sessT=setTimeout(()=>{
+    if(ocupado||falando||ouvindoFala){tocarSessao();return}
+    fecharSessao(wakeOn?'diga "'+wakeWord()+'" para chamar de novo':'conversa encerrada por silêncio');
+  },silencioMs());
+}
+function fecharSessao(msg){
+  if(ocupado){geracao++;ocupado=false}                   // ENCERRAR tambem solta um pedido preso
+  sessao=false;clearTimeout(sessT);
+  conv.textContent='CONVERSAR';conv.style.background='var(--roxo)';
+  if(msg)status(msg);
+  esp('/mood?m=0');
+  if(wakeOn)ouvirDeNovo(300);else pararEscuta();
+}
+function semMicSeguro(){
+  ans.innerHTML='o Chrome bloqueia o microfone em páginas http.<br><br>'+
+    '1) abra <b>chrome://flags</b><br>'+
+    '2) procure <b>Insecure origins treated as secure</b><br>'+
+    '3) <b>DIGITE NA CAIXA DE TEXTO</b> (só mudar para Ativado não basta):'+
+    '<br><br><b style="font-size:17px">http://'+location.host+'</b><br><br>'+
+    '4) deixe em Ativado e feche o Chrome pelos apps recentes';
+}
+function podeOuvir(){
+  if(!SR){status('este navegador não tem reconhecimento de voz: use o Chrome do Android');return false}
+  if(!NATIVO&&!window.isSecureContext){semMicSeguro();return false}
+  return true;
+}
+conv.onclick=async()=>{
+  if(sessao){calarVoz();fecharSessao('conversa encerrada');return}
+  if(!podeOuvir())return;
+  if(!await loadCfg()){status('não consegui ler a configuração do Zeus');return}
+  abrirSessao();status('pode falar');
+  await falar('Oi! Eu sou o Zeus. Pode falar comigo.');
+  tocarSessao();
+};
+
+// ---------------- botoes e texto ----------------
+$('go').onclick=()=>{const t=q.value;q.value='';processar(t)};
+q.addEventListener('keydown',e=>{if(e.key==='Enter'){const t=q.value;q.value='';processar(t)}});
+document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>processar(b.dataset.q));
+$('bCam').onclick=async()=>{                 // direto na ponte, sem passar pelo modelo
+  if(cameraAberta()){sairCamera();return}  // aberta aqui: sai (a dos outros aparelhos continua)
+  const r=await ponte('/webcam?a=ligar');   // ja ligada em outro aparelho: so entra no video
+  if(!r.erro)mostrarCamera(r.camera);
+  const t=r.erro?'Desculpe, '+r.erro:(r.feito.charAt(0).toUpperCase()+r.feito.slice(1)+'.');
+  status(t);falar(t);
+};
+for(let i=1;i<7;i++){const b=$('m'+i);if(b)b.onclick=()=>esp('/mood?m='+i+'&hold=6000')}
+$('cPonte').value=lsGet('ponte');$('cWake').value=lsGet('wake');$('cSaida').value=saidaVoz();
+$('cNome').value=lsGet('nome');$('cNome').placeholder='automático: '+nomeAparelho();
+$('cSalva').onclick=()=>{lsSet('ponte',$('cPonte').value.trim());lsSet('wake',$('cWake').value.trim().toLowerCase());
+  lsSet('saida',$('cSaida').value);lsSet('nome',$('cNome').value.trim().slice(0,24));cfg=null;status('ajustes salvos');
+  ponte('/ping')};                                      // o painel do notebook ja mostra o nome novo
+// no WiFi de casa (sem a internet) o app nao passa pela ponte a cada segundo: avisa que esta ligado
+if(!REMOTO)setInterval(()=>{if(cfg)ponte('/ping')},30000);
+$('cTesta').onclick=async()=>{const r=await ponte('/ping');status(r.ok?'notebook respondeu: '+r.pc:r.erro)};
+$('cSair').onclick=()=>{lsSet('token','');cfg=null;entrando=null;location.reload()};
+if(!REMOTO)$('cSair').style.display='none';
+
+// ================= MODO ALEXA =================
+async function manterTelaAcesa(){
+  try{if(wakeOn&&navigator.wakeLock&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release',()=>{wakeLock=null})}}catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')manterTelaAcesa()});
+function setWake(on){
+  if(on&&!podeOuvir())return;
+  wakeOn=on;lsSet('alexa',on?'1':'');
+  alexaBtn.classList.toggle('on',on);
+  alexaBtn.textContent=on?'Modo Alexa: diga "'+wakeWord()+'"':'Modo Alexa: desligado';
+  if(on){manterTelaAcesa();loadCfg();if(!sessao){ouvir();status('diga "'+wakeWord()+'" e o pedido. Ex.: '+wakeWord()+', que horas são?')}}
+  else{if(!sessao)pararEscuta();try{wakeLock&&wakeLock.release()}catch(e){}}
+}
+alexaBtn.onclick=()=>setWake(!wakeOn);
+// o Chrome so libera o microfone depois de um toque: lembra o modo, mas espera o 1o toque
+if(lsGet('alexa')&&NATIVO){
+  setWake(true);                                       // no app o microfone ja esta liberado
+}else if(lsGet('alexa')){
+  alexaBtn.textContent='Modo Alexa: toque para retomar';
+  document.addEventListener('click',function retoma(e){
+    document.removeEventListener('click',retoma,true);
+    if(e.target!==alexaBtn&&!wakeOn)setWake(true);
+  },true);
+}
+// partida em andamento (fica na ponte): ao reabrir o app ou a pagina, o tabuleiro volta
+ponte('/chess/state').then(s=>{if(s&&s.ativa){xs=s;drawBoard()}});
+</script></body></html>

@@ -1,0 +1,15 @@
+**/build/
+**/bin/
+**/obj/
+**/.gradle/
+**/__pycache__/
+*.pyc
+**/secrets.h
+**/zeus_ponte.json
+**/sdkconfig
+**/local.properties
+**/ponte/cerebro/
+**/ponte/vozes/
+**/ponte/fotos/
+**/extensao_instagram/config.js
+*.log

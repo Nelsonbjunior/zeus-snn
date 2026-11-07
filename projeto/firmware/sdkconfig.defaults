@@ -1,0 +1,23 @@
+CONFIG_IDF_TARGET="esp32s3"
+
+# Pagina do Zeus + rotas: o Chrome do celular manda cabecalhos maiores que o
+# padrao de 512 bytes (dava 431), e /show leva texto com acento codificado.
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=2048
+CONFIG_HTTPD_MAX_URI_LEN=1024
+
+# Logs pela USB/serial normal (diferente do ROBO_IA_IOT, a UART nao carrega protocolo)
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=115200
+
+# O chip tem 4 MB. Particao de app grande (1,5 MB): o canal HTTPS com a ponte
+# (zeus.appdevtest.shop) nao cabia nos 1 MB do padrao.
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_CMN=y
+
+
+# Rede neural (SNN) ocupa ~80 KB de RAM: TLS so com buffers quando precisa e menos buffers fixos do WiFi
+CONFIG_MBEDTLS_DYNAMIC_BUFFER=y
+CONFIG_MBEDTLS_DYNAMIC_FREE_CONFIG_DATA=y
+CONFIG_MBEDTLS_DYNAMIC_FREE_CA_CERT=y
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=6
